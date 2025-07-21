@@ -1,0 +1,12 @@
+# Django Framework
+django~=5.2
+
+# For loading environment variables from .env file
+python-dotenv~=1.0
+
+# For Google Search via SerpApi
+google-search-results~=2.4
+
+# For making HTTP requests to the Gemini API
+requests~=2.32  
+
