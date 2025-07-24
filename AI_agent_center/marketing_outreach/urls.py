@@ -11,4 +11,5 @@ urlpatterns = [
     # API views
     path('api/search-companies/', views.search_companies_api, name='api_search_companies'),
     path('api/generate-email/', views.generate_email_api, name='api_generate_email'),
+    # The find-contact URL has been removed as its logic is now merged into search-companies
 ]

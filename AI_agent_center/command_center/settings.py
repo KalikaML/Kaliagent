@@ -108,3 +108,7 @@ STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')] # Add this
 
 # Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+# For Development: Emails will be printed to the console where you run `manage.py runserver`
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
