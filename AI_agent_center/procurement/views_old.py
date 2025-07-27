@@ -5,49 +5,50 @@ import email
 from email.header import decode_header
 import csv
 import re
-import requests
-from urllib.parse import urlparse
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db.models import Sum, Avg, F
 from .models import ProcurementRequest, Supplier, Quote
-from serpapi import GoogleSearch 
+from serpapi import GoogleSearch
 
-# --- NEW: Constants for Time Saved Calculation ---
-TIME_SAVED_FIND_SUPPLIERS = 0.5  # 30 minutes
-TIME_SAVED_SEND_RFQS = 0.75      # 45 minutes
-TIME_SAVED_PARSE_QUOTES = 0.25   # 15 minutes per quote
+### new code dynamic data instead of Hardcoded sample data 
+# procurement/views.py
+import json
+from django.shortcuts import render
+from .models import ProcurementRequest
 
-# MODIFIED: This view now calculates all dashboard metrics
+def procurement_kanban_view(request):
+    # Fetch all requests from the database
+    requests = ProcurementRequest.objects.all().order_by('created_at')
+
+    # Format the data into a list of dictionaries that matches the JS structure
+    requests_data = [
+        {
+            "id": req.id,
+            "title": req.title,
+            "quantity": req.quantity,
+            "specs": req.specs,
+            "status": req.status,
+            "source": req.source,
+            "quotesIn": req.quotes_in,
+            "totalQuotes": req.total_quotes_sent
+        }
+        for req in requests
+    ]
+
+    context = {
+        'requests_json': json.dumps(requests_data) # Convert to a JSON string
+    }
+    return render(request, 'procurement/procurement_tool.html', context)
+
+#### end of dynamic data 
+ 
+ 
+# procurement_dashboard_view and other unchanged views...
 def procurement_dashboard_view(request):
-    # --- 1. Dashboard Metric Calculations ---
-    
-    # Calculate Total Savings: Sum of savings from all finalized requests
-    total_savings = ProcurementRequest.objects.filter(status='finalized').aggregate(total=Sum('estimated_savings'))['total'] or 0
-
-    # Calculate Time Saved based on completed stages
-    time_saved_sourcing = ProcurementRequest.objects.filter(status__in=['awaiting-approval', 'rfqs-sent', 'quotes-received', 'finalized']).count() * TIME_SAVED_FIND_SUPPLIERS
-    time_saved_rfqs = ProcurementRequest.objects.filter(status__in=['rfqs-sent', 'quotes-received', 'finalized']).count() * TIME_SAVED_SEND_RFQS
-    time_saved_parsing = Quote.objects.count() * TIME_SAVED_PARSE_QUOTES
-    total_time_saved = time_saved_sourcing + time_saved_rfqs + time_saved_parsing
-    
-    # Fetch Market Alert (example uses a free API for gold prices, adaptable for others)
-    market_alert = "Market data currently unavailable."
-    try:
-        # NOTE: Using a free API for demonstration. This can be swapped for any commodity.
-        response = requests.get("https://api.nbp.pl/api/cenyzlota", timeout=5)
-        if response.status_code == 200:
-            data = response.json()
-            price = data[0]['cena']
-            market_alert = f"Gold prices are currently at PLN {price}/gram."
-    except requests.RequestException:
-        print("Could not fetch market data.")
-
-    # --- 2. Kanban Board Data ---
     columns_data = [
         {'id': 'new-request', 'title': '📥 New Request', 'color': 'border-sky-500'},
         {'id': 'agent-working', 'title': '🤖 Agent Working', 'color': 'border-amber-500'},
@@ -59,56 +60,9 @@ def procurement_dashboard_view(request):
     all_requests = ProcurementRequest.objects.all().order_by('-created_at')
     for column in columns_data:
         column['requests'] = [req for req in all_requests if req.status == column['id']]
-    
-    context = {
-        'columns': columns_data,
-        'total_savings': total_savings,
-        'total_time_saved': total_time_saved,
-        'market_alert': market_alert,
-    }
+    context = {'columns': columns_data}
     return render(request, 'procurement/dashboard.html', context)
 
-# NEW: API endpoint to finalize a request and calculate savings
-@csrf_exempt
-@require_POST
-def finalize_request_api(request, pk):
-    try:
-        data = json.loads(request.body)
-        quote_id = data.get('quote_id')
-        
-        proc_request = ProcurementRequest.objects.get(pk=pk)
-        selected_quote = Quote.objects.get(pk=quote_id)
-        
-        # Calculate average price from all quotes for this request
-        all_quotes_for_request = Quote.objects.filter(procurement_request=proc_request, price__isnull=False)
-        average_price = all_quotes_for_request.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price
-
-        # Calculate savings
-        savings = average_price - selected_quote.price
-        
-        # Try to parse quantity as a number for calculation
-        try:
-            quantity_val = int(re.search(r'\d+', proc_request.quantity).group())
-            total_savings = savings * quantity_val
-        except (ValueError, AttributeError):
-            total_savings = savings # Fallback if quantity is not a simple number
-
-        # Update the procurement request
-        proc_request.status = 'finalized'
-        proc_request.selected_quote = selected_quote
-        proc_request.estimated_savings = total_savings
-        proc_request.save()
-        
-        return JsonResponse({'success': True, 'savings': total_savings})
-        
-    except (ProcurementRequest.DoesNotExist, Quote.DoesNotExist):
-        return JsonResponse({'error': 'Request or Quote not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-# --- All other API views remain the same ---
-# (add_request_api, bulk_upload_api, get_request_details_api, find_suppliers_api, send_rfqs_api, check_and_parse_quotes_api)
 @csrf_exempt
 @require_POST
 def add_request_api(request):
@@ -152,42 +106,67 @@ def get_request_details_api(request, pk):
     except ProcurementRequest.DoesNotExist:
         return JsonResponse({'error': 'Request not found'}, status=404)
 
+# --- REAL AGENT STAGE APIs ---
+
+# MODIFIED: find_suppliers_api now performs a two-step "deep search" for emails
 @csrf_exempt
 @require_POST
 def find_suppliers_api(request, pk):
     req = ProcurementRequest.objects.get(pk=pk)
     req.status = 'agent-working'
     req.save()
-    broad_search_query = f'top "{req.title}" manufacturers OR suppliers in India'
+
+    # Step 1: Broad search for a list of potential suppliers
+    broad_search_query = f'"{req.title}" supplier OR manufacturer India site:indiamart.com OR site:tradeindia.com'
     params = {"engine": "google", "q": broad_search_query, "api_key": settings.SERPAPI_API_KEY}
     search = GoogleSearch(params)
-    initial_results = search.get_dict().get('organic_results', [])[:7]
+    initial_results = search.get_dict().get('organic_results', [])[:7] # Get top 7 potential suppliers
+
     req.suppliers.all().delete()
+    
     email_regex = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_regex = r'(\+91[\s-]?)?[789]\d{9}'
+
     for result in initial_results:
         supplier_name = result.get('title')
         supplier_link = result.get('link')
-        found_email = None
-        if supplier_link:
-            domain = urlparse(supplier_link).netloc.replace('www.', '')
-            if domain and settings.HUNTER_API_KEY:
-                try:
-                    hunter_url = f"https://api.hunter.io/v2/domain-search?domain={domain}&api_key={settings.HUNTER_API_KEY}&type=generic"
-                    response = requests.get(hunter_url, timeout=10)
-                    if response.status_code == 200:
-                        emails = response.json().get('data', {}).get('emails', [])
-                        if emails: found_email = emails[0]['value']
-                except Exception as e:
-                    print(f"Hunter.io API call failed for domain {domain}: {e}")
+        snippet = result.get('snippet', '')
+        
+        # Quick scan the initial snippet for contact info
+        email_match = re.search(email_regex, snippet)
+        phone_match = re.search(phone_regex, snippet)
+
+        # Step 2: If email not found in the initial scan, perform a "deep search" on the supplier's website
+        if not email_match and supplier_link:
+            try:
+                deep_search_query = f'email OR contact us site:{supplier_link}'
+                deep_params = {"engine": "google", "q": deep_search_query, "api_key": settings.SERPAPI_API_KEY}
+                deep_search = GoogleSearch(deep_params)
+                deep_results = deep_search.get_dict().get('organic_results', [])
+                
+                for deep_result in deep_results:
+                    deep_snippet = deep_result.get('snippet', '') + " " + deep_result.get('title', '')
+                    email_match = re.search(email_regex, deep_snippet)
+                    if email_match:
+                        break # Found an email, stop the deep search for this supplier
+            except Exception as e:
+                print(f"Deep search failed for {supplier_link}: {e}")
+
+        # Save the supplier with the best information we could find
         Supplier.objects.create(
-            procurement_request=req, name=supplier_name,
-            email=found_email, phone=None, source_link=supplier_link
+            procurement_request=req,
+            name=supplier_name,
+            email=email_match.group(0) if email_match else None,
+            phone=phone_match.group(0) if phone_match else None,
+            source_link=supplier_link
         )
+
     req.status = 'awaiting-approval'
     req.save()
+    
     return JsonResponse({'success': True, 'new_status': 'awaiting-approval'})
 
+# MODIFIED: send_rfqs_api now includes better error handling
 @csrf_exempt
 @require_POST
 def send_rfqs_api(request, pk):
@@ -195,17 +174,24 @@ def send_rfqs_api(request, pk):
     suppliers = req.suppliers.all()
     if not suppliers:
         return JsonResponse({'error': 'No suppliers were found for this request.'}, status=400)
+    
+    # Filter for suppliers that actually have an email address
     recipient_list = [s.email for s in suppliers if s.email]
     if not recipient_list:
         return JsonResponse({'error': 'No suppliers with valid email addresses were found.'}, status=400)
+
     subject = f"Request for Quotation (RFQ) - {req.title}"
     message = f"Dear Supplier,\n\nWe are interested in procuring the following item:\n\nProduct: {req.title}\nQuantity: {req.quantity}\nSpecifications: {req.specs}\n\nPlease provide a quotation including price, availability, estimated lead time, and payment terms.\nReference ID: REQ-{req.id}\n\nThank you,\nProcurement Team"
+    
     send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, recipient_list)
+    
     req.status = 'rfqs-sent'
     req.total_quotes_sent = len(recipient_list)
     req.save()
+
     return JsonResponse({'success': True, 'new_status': 'rfqs-sent', 'sent_to_count': len(recipient_list)})
 
+# check_and_parse_quotes_api remains the same...
 @csrf_exempt
 @require_POST
 def check_and_parse_quotes_api(request, pk):
@@ -223,7 +209,8 @@ def check_and_parse_quotes_api(request, pk):
         raw_email = single_email_data[0][1]
         uid_match = re.search(r'UID\s+(\d+)', single_email_data[0][0].decode())
         uid = uid_match.group(1) if uid_match else None
-        if not uid or uid in processed_uids: continue
+        if not uid or uid in processed_uids:
+            continue
         msg = email.message_from_bytes(raw_email)
         from_ = msg.get("From")
         sender_name, sender_email = email.utils.parseaddr(from_)
@@ -247,7 +234,8 @@ def check_and_parse_quotes_api(request, pk):
             price=float(price_match.group(1).replace(',', '')) if price_match else None,
             lead_time_days=int(lead_time_match.group(1)) if lead_time_match else None,
             payment_terms=payment_match.group(1).strip() if payment_match else 'N/A',
-            parsed_from_email_uid=uid, full_email_body=body
+            parsed_from_email_uid=uid,
+            full_email_body=body
         )
         new_quotes_found += 1
     mail.logout()

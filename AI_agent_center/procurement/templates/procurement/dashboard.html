@@ -47,15 +47,15 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-slate-800 p-4 rounded-lg">
             <h3 class="font-bold text-slate-300">Total Savings This Quarter</h3>
-            <p class="text-3xl font-bold text-green-400">₹1,245,000</p>
+            <p class="text-3xl font-bold text-green-400">₹{{ total_savings|floatformat:2 }}</p>
         </div>
         <div class="bg-slate-800 p-4 rounded-lg">
             <h3 class="font-bold text-slate-300">Time Saved This Month</h3>
-            <p class="text-3xl font-bold text-sky-400">45 <span class="text-xl">hours</span></p>
+            <p class="text-3xl font-bold text-sky-400">{{ total_time_saved|floatformat:2 }} <span class="text-xl">hours</span></p>
         </div>
         <div class="bg-slate-800 p-4 rounded-lg">
             <h3 class="font-bold text-slate-300">Market Alert</h3>
-            <p class="text-amber-400">Steel prices up 3% this week.</p>
+            <p class="text-amber-400">{{ market_alert }}</p>
         </div>
     </div>
 
@@ -73,7 +73,7 @@
                 <div class="kanban-card {{ column.color }}" data-request-id="{{ request.id }}">
                     <h3 class="font-bold">{{ request.title }}</h3>
                     <p class="text-sm text-slate-400 mt-1">{{ request.quantity }}</p>
-                    </div>
+                </div>
                 {% endfor %}
             </div>
         </div>
@@ -100,7 +100,6 @@
         </form>
     </div>
 </div>
-
 
 <div id="add-request-modal" class="modal-backdrop hidden">
     <div class="modal-content max-w-2xl h-auto">
