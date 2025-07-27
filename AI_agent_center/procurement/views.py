@@ -6,48 +6,36 @@ from email.header import decode_header
 import csv
 import re
 import requests
-from urllib.parse import urlparse
+import threading  # <-- NEW: To run the scraper in the background
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db.models import Sum, Avg, F
+from django.db.models import Sum, Avg
 from .models import ProcurementRequest, Supplier, Quote
-from serpapi import GoogleSearch 
+from .scraper import run_supplier_sourcing_agent # <-- NEW: Import our scraper function
 
-# --- NEW: Constants for Time Saved Calculation ---
-TIME_SAVED_FIND_SUPPLIERS = 0.5  # 30 minutes
-TIME_SAVED_SEND_RFQS = 0.75      # 45 minutes
-TIME_SAVED_PARSE_QUOTES = 0.25   # 15 minutes per quote
+# --- Constants for Time Saved Calculation ---
+TIME_SAVED_FIND_SUPPLIERS = 0.5
+TIME_SAVED_SEND_RFQS = 0.75
+TIME_SAVED_PARSE_QUOTES = 0.25
 
-# MODIFIED: This view now calculates all dashboard metrics
 def procurement_dashboard_view(request):
-    # --- 1. Dashboard Metric Calculations ---
-    
-    # Calculate Total Savings: Sum of savings from all finalized requests
+    # This view's logic for calculating metrics and displaying the board remains the same
     total_savings = ProcurementRequest.objects.filter(status='finalized').aggregate(total=Sum('estimated_savings'))['total'] or 0
-
-    # Calculate Time Saved based on completed stages
     time_saved_sourcing = ProcurementRequest.objects.filter(status__in=['awaiting-approval', 'rfqs-sent', 'quotes-received', 'finalized']).count() * TIME_SAVED_FIND_SUPPLIERS
     time_saved_rfqs = ProcurementRequest.objects.filter(status__in=['rfqs-sent', 'quotes-received', 'finalized']).count() * TIME_SAVED_SEND_RFQS
     time_saved_parsing = Quote.objects.count() * TIME_SAVED_PARSE_QUOTES
     total_time_saved = time_saved_sourcing + time_saved_rfqs + time_saved_parsing
-    
-    # Fetch Market Alert (example uses a free API for gold prices, adaptable for others)
     market_alert = "Market data currently unavailable."
     try:
-        # NOTE: Using a free API for demonstration. This can be swapped for any commodity.
         response = requests.get("https://api.nbp.pl/api/cenyzlota", timeout=5)
         if response.status_code == 200:
-            data = response.json()
-            price = data[0]['cena']
-            market_alert = f"Gold prices are currently at PLN {price}/gram."
+            market_alert = f"Gold prices: PLN {response.json()[0]['cena']}/gram."
     except requests.RequestException:
         print("Could not fetch market data.")
-
-    # --- 2. Kanban Board Data ---
     columns_data = [
         {'id': 'new-request', 'title': '📥 New Request', 'color': 'border-sky-500'},
         {'id': 'agent-working', 'title': '🤖 Agent Working', 'color': 'border-amber-500'},
@@ -59,56 +47,29 @@ def procurement_dashboard_view(request):
     all_requests = ProcurementRequest.objects.all().order_by('-created_at')
     for column in columns_data:
         column['requests'] = [req for req in all_requests if req.status == column['id']]
-    
     context = {
-        'columns': columns_data,
-        'total_savings': total_savings,
-        'total_time_saved': total_time_saved,
-        'market_alert': market_alert,
+        'columns': columns_data, 'total_savings': total_savings,
+        'total_time_saved': total_time_saved, 'market_alert': market_alert,
     }
     return render(request, 'procurement/dashboard.html', context)
 
-# NEW: API endpoint to finalize a request and calculate savings
+# MODIFIED: This now calls the new hybrid agent in a background thread
 @csrf_exempt
 @require_POST
-def finalize_request_api(request, pk):
-    try:
-        data = json.loads(request.body)
-        quote_id = data.get('quote_id')
-        
-        proc_request = ProcurementRequest.objects.get(pk=pk)
-        selected_quote = Quote.objects.get(pk=quote_id)
-        
-        # Calculate average price from all quotes for this request
-        all_quotes_for_request = Quote.objects.filter(procurement_request=proc_request, price__isnull=False)
-        average_price = all_quotes_for_request.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price
+def find_suppliers_api(request, pk):
+    req = ProcurementRequest.objects.get(pk=pk)
+    req.status = 'agent-working'
+    req.save()
 
-        # Calculate savings
-        savings = average_price - selected_quote.price
-        
-        # Try to parse quantity as a number for calculation
-        try:
-            quantity_val = int(re.search(r'\d+', proc_request.quantity).group())
-            total_savings = savings * quantity_val
-        except (ValueError, AttributeError):
-            total_savings = savings # Fallback if quantity is not a simple number
-
-        # Update the procurement request
-        proc_request.status = 'finalized'
-        proc_request.selected_quote = selected_quote
-        proc_request.estimated_savings = total_savings
-        proc_request.save()
-        
-        return JsonResponse({'success': True, 'savings': total_savings})
-        
-    except (ProcurementRequest.DoesNotExist, Quote.DoesNotExist):
-        return JsonResponse({'error': 'Request or Quote not found'}, status=404)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+    # Run the new, powerful sourcing agent in a separate thread
+    scraper_thread = threading.Thread(target=run_supplier_sourcing_agent, args=(pk,))
+    scraper_thread.start()
+    
+    return JsonResponse({'success': True, 'message': 'Hybrid sourcing agent started in the background.'})
 
 
-# --- All other API views remain the same ---
-# (add_request_api, bulk_upload_api, get_request_details_api, find_suppliers_api, send_rfqs_api, check_and_parse_quotes_api)
+# --- All other API views remain exactly the same ---
+# (add_request_api, bulk_upload_api, get_request_details_api, finalize_request_api, send_rfqs_api, check_and_parse_quotes_api)
 @csrf_exempt
 @require_POST
 def add_request_api(request):
@@ -122,20 +83,25 @@ def add_request_api(request):
 @require_POST
 def bulk_upload_api(request):
     if 'file' not in request.FILES: return redirect('procurement:dashboard')
-    csv_file = request.FILES['file']
-    if not csv_file.name.endswith('.csv'): return redirect('procurement:dashboard')
+    uploaded_file = request.FILES['file']
     try:
-        decoded_file = csv_file.read().decode('utf-8').splitlines()
-        reader = csv.reader(decoded_file)
-        next(reader, None)
-        for row in reader:
-            if len(row) >= 3:
+        if uploaded_file.name.endswith('.csv'):
+            decoded_file = uploaded_file.read().decode('utf-8').splitlines()
+            reader = csv.DictReader(decoded_file)
+            for row in reader:
                 ProcurementRequest.objects.create(
-                    title=row[0], quantity=row[1], specs=row[2],
-                    source='Bulk Upload', status='new-request'
+                    title=row.get('Product Title'), quantity=row.get('Quantity'),
+                    specs=row.get('Specifications'), source='Bulk Upload', status='new-request'
+                )
+        elif uploaded_file.name.endswith('.xlsx'):
+            df = pd.read_excel(uploaded_file)
+            for index, row in df.iterrows():
+                ProcurementRequest.objects.create(
+                    title=row['Product Title'], quantity=row['Quantity'],
+                    specs=row['Specifications'], source='Bulk Upload', status='new-request'
                 )
     except Exception as e:
-        print(f"Error processing bulk upload: {e}")
+        print(f"Error processing bulk upload file '{uploaded_file.name}': {e}")
     return redirect('procurement:dashboard')
 
 def get_request_details_api(request, pk):
@@ -154,39 +120,29 @@ def get_request_details_api(request, pk):
 
 @csrf_exempt
 @require_POST
-def find_suppliers_api(request, pk):
-    req = ProcurementRequest.objects.get(pk=pk)
-    req.status = 'agent-working'
-    req.save()
-    broad_search_query = f'top "{req.title}" manufacturers OR suppliers in India'
-    params = {"engine": "google", "q": broad_search_query, "api_key": settings.SERPAPI_API_KEY}
-    search = GoogleSearch(params)
-    initial_results = search.get_dict().get('organic_results', [])[:7]
-    req.suppliers.all().delete()
-    email_regex = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
-    phone_regex = r'(\+91[\s-]?)?[789]\d{9}'
-    for result in initial_results:
-        supplier_name = result.get('title')
-        supplier_link = result.get('link')
-        found_email = None
-        if supplier_link:
-            domain = urlparse(supplier_link).netloc.replace('www.', '')
-            if domain and settings.HUNTER_API_KEY:
-                try:
-                    hunter_url = f"https://api.hunter.io/v2/domain-search?domain={domain}&api_key={settings.HUNTER_API_KEY}&type=generic"
-                    response = requests.get(hunter_url, timeout=10)
-                    if response.status_code == 200:
-                        emails = response.json().get('data', {}).get('emails', [])
-                        if emails: found_email = emails[0]['value']
-                except Exception as e:
-                    print(f"Hunter.io API call failed for domain {domain}: {e}")
-        Supplier.objects.create(
-            procurement_request=req, name=supplier_name,
-            email=found_email, phone=None, source_link=supplier_link
-        )
-    req.status = 'awaiting-approval'
-    req.save()
-    return JsonResponse({'success': True, 'new_status': 'awaiting-approval'})
+def finalize_request_api(request, pk):
+    try:
+        data = json.loads(request.body)
+        quote_id = data.get('quote_id')
+        proc_request = ProcurementRequest.objects.get(pk=pk)
+        selected_quote = Quote.objects.get(pk=quote_id)
+        all_quotes_for_request = Quote.objects.filter(procurement_request=proc_request, price__isnull=False)
+        average_price = all_quotes_for_request.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price
+        savings = average_price - selected_quote.price
+        try:
+            quantity_val = int(re.search(r'\d+', proc_request.quantity).group())
+            total_savings = savings * quantity_val
+        except (ValueError, AttributeError):
+            total_savings = savings
+        proc_request.status = 'finalized'
+        proc_request.selected_quote = selected_quote
+        proc_request.estimated_savings = total_savings
+        proc_request.save()
+        return JsonResponse({'success': True, 'savings': total_savings})
+    except (ProcurementRequest.DoesNotExist, Quote.DoesNotExist):
+        return JsonResponse({'error': 'Request or Quote not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 @require_POST
@@ -205,6 +161,7 @@ def send_rfqs_api(request, pk):
     req.total_quotes_sent = len(recipient_list)
     req.save()
     return JsonResponse({'success': True, 'new_status': 'rfqs-sent', 'sent_to_count': len(recipient_list)})
+
 
 @csrf_exempt
 @require_POST
