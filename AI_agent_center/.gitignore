@@ -17,8 +17,8 @@ ENV/
 *.pyd
 db.sqlite3
 media/
-staticfiles/
-static/
+
+
 
 # VSCode and IDE settings
 .vscode/
