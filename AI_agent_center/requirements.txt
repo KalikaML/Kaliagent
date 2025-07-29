@@ -10,3 +10,6 @@ google-search-results~=2.4
 # For making HTTP requests to the Gemini API
 requests~=2.32  
 
+playwright
+
+google-generativeai

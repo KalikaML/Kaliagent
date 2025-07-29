@@ -1,0 +1,340 @@
+{% extends "core/base.html" %} {% block content %}
+<div
+  class="w-full h-screen bg-slate-900 text-slate-300 flex flex-col p-4 sm:p-6 lg:p-8"
+>
+  <!-- Header -->
+  <div class="text-center mb-6 flex-shrink-0">
+    <h1 class="text-4xl font-bold text-white">AI Gmail Pitch Agent</h1>
+    <p class="text-slate-400 mt-2">
+      Craft, Preview, and Send Professional HTML Emails Instantly.
+    </p>
+  </div>
+
+  <form
+    id="pitch-form"
+    method="post"
+    enctype="multipart/form-data"
+    action="{% url 'ai_agent_pitch:pitch_creator' %}"
+    class="flex-grow min-h-0"
+  >
+    {% csrf_token %}
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 h-full">
+      <!-- Left Panel: Editor & Form (with scrolling) -->
+      <div
+        class="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 flex flex-col space-y-6 overflow-y-auto"
+      >
+        <!-- Template Management -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              for="load_template"
+              class="text-sm font-medium text-slate-400 mb-2 block"
+              >Load Template</label
+            >
+            <select
+              id="load_template"
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-300 focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+            >
+              <option value="">Select a template...</option>
+              {% for t in templates %}
+              <option value="{{ t.id }}">{{ t.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div>
+            <label
+              for="save_template_name"
+              class="text-sm font-medium text-slate-400 mb-2 block"
+              >Save/Update Template</label
+            >
+            <div class="flex gap-2">
+              <input
+                type="text"
+                id="save_template_name"
+                class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-300 focus:ring-2 focus:ring-purple-500"
+                placeholder="Template Name"
+              />
+              <button
+                type="button"
+                id="save-template-btn"
+                class="bg-cyan-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-cyan-500"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- HTML Editor -->
+        <div class="flex-grow flex flex-col min-h-[200px]">
+          <label
+            for="html_content"
+            class="text-lg font-semibold text-white mb-2"
+            >HTML Email Body</label
+          >
+          <textarea
+            id="html_content"
+            name="html_content"
+            onkeyup="updatePreview()"
+            class="w-full h-full flex-grow bg-slate-900 border border-slate-600 rounded-lg p-4 font-mono text-sm text-slate-300 focus:ring-2 focus:ring-purple-500"
+            placeholder="Paste your HTML code here or load a template..."
+          ></textarea>
+        </div>
+
+        <!-- Subject Line -->
+        <div>
+          <label for="subject" class="text-lg font-semibold text-white mb-2"
+            >Subject</label
+          >
+          <div class="flex gap-2">
+            <input
+              type="text"
+              name="subject"
+              id="subject"
+              required
+              class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-300 focus:ring-2 focus:ring-purple-500"
+              placeholder="e.g., An Exclusive AI Opportunity for You"
+            />
+            <button
+              type="button"
+              id="generate-subject-btn"
+              class="bg-teal-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-teal-500 whitespace-nowrap"
+            >
+              AI Suggest
+            </button>
+          </div>
+          <div id="subject-suggestions" class="flex flex-wrap gap-2 mt-3"></div>
+        </div>
+
+        <!-- Recipient Details -->
+        <div>
+          <label for="recipient" class="text-lg font-semibold text-white mb-2"
+            >Single Recipient</label
+          >
+          <input
+            type="email"
+            name="recipient"
+            id="recipient"
+            class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-300 focus:ring-2 focus:ring-purple-500"
+            placeholder="recipient@example.com"
+          />
+        </div>
+
+        <div class="text-center text-slate-400 font-semibold">OR</div>
+
+        <div>
+          <label for="csv_file" class="text-lg font-semibold text-white mb-2"
+            >Bulk Send via CSV</label
+          >
+          <input
+            type="file"
+            name="csv_file"
+            id="csv_file"
+            accept=".csv"
+            class="w-full text-sm text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-500/10 file:text-purple-300 hover:file:bg-purple-500/20"
+          />
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          type="submit"
+          class="w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-purple-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-purple-500 transition-all duration-300 transform hover:scale-105"
+        >
+          Send Gmail Pitch
+        </button>
+      </div>
+
+      <!-- Right Panel: Live Preview -->
+      <div
+        class="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 flex flex-col h-full"
+      >
+        <div class="flex justify-between items-center mb-2 flex-shrink-0">
+          <h2 class="text-lg font-semibold text-white">Live Preview</h2>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              id="zoom-out-btn"
+              class="h-8 w-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold"
+            >
+              -
+            </button>
+            <span id="zoom-level" class="text-sm text-slate-400">100%</span>
+            <button
+              type="button"
+              id="zoom-in-btn"
+              class="h-8 w-8 rounded-full bg-slate-700 hover:bg-slate-600 text-white font-bold"
+            >
+              +
+            </button>
+          </div>
+        </div>
+        <div class="flex-grow bg-white rounded-lg overflow-hidden min-h-0">
+          <iframe
+            id="preview"
+            class="w-full h-full border-0 origin-top-left transition-transform duration-200"
+          ></iframe>
+        </div>
+      </div>
+    </div>
+  </form>
+
+  <!-- Toast Notification -->
+  <div
+    id="toast"
+    class="fixed top-5 right-5 p-4 rounded-lg text-white transition-all duration-300 z-50 translate-x-[120%]"
+    role="alert"
+  >
+    <span id="toast-message"></span>
+  </div>
+
+  <script>
+    // --- UI Elements ---
+    const htmlContentEl = document.getElementById('html_content');
+    const previewFrame = document.getElementById('preview');
+    const saveTemplateBtn = document.getElementById('save-template-btn');
+    const saveTemplateNameEl = document.getElementById('save_template_name');
+    const loadTemplateEl = document.getElementById('load_template');
+    const generateSubjectBtn = document.getElementById('generate-subject-btn');
+    const subjectSuggestionsEl = document.getElementById('subject-suggestions');
+    const subjectEl = document.getElementById('subject');
+    const zoomInBtn = document.getElementById('zoom-in-btn');
+    const zoomOutBtn = document.getElementById('zoom-out-btn');
+    const zoomLevelEl = document.getElementById('zoom-level');
+    const toastEl = document.getElementById('toast');
+    const toastMessageEl = document.getElementById('toast-message');
+
+    // --- State ---
+    let currentZoom = 1.0;
+
+    // --- Functions ---
+    function updatePreview() {
+        previewFrame.srcdoc = htmlContentEl.value;
+    }
+
+    function showToast(message, isSuccess = true) {
+        toastMessageEl.textContent = message;
+        toastEl.className = 'fixed top-5 right-5 p-4 rounded-lg text-white transition-all duration-300 z-50'; // Reset classes and add z-index
+        if (isSuccess) {
+            toastEl.classList.add('bg-green-500');
+        } else {
+            toastEl.classList.add('bg-red-500');
+        }
+        toastEl.classList.remove('translate-x-[120%]');
+        toastEl.classList.add('translate-x-0');
+
+        setTimeout(() => {
+            toastEl.classList.remove('translate-x-0');
+            toastEl.classList.add('translate-x-[120%]');
+        }, 4000);
+    }
+
+    function setZoom(level) {
+        currentZoom = Math.max(0.5, Math.min(1.5, level)); // Clamp zoom between 50% and 150%
+        previewFrame.style.transform = `scale(${currentZoom})`;
+        zoomLevelEl.textContent = `${Math.round(currentZoom * 100)}%`;
+    }
+
+    // --- Event Listeners ---
+    document.addEventListener('DOMContentLoaded', () => {
+        updatePreview(); // Initial preview update
+
+        // Safely pass Django messages to JavaScript to prevent syntax errors
+        const djangoMessages = [
+            {% for message in messages %}
+            {
+                "message": "{{ message.message|escapejs }}",
+                "tags": "{{ message.tags }}"
+            },
+            {% endfor %}
+        ];
+
+        if (djangoMessages.length > 0) {
+            djangoMessages.forEach(msg => {
+                showToast(msg.message, msg.tags === "success");
+            });
+        }
+    });
+
+    htmlContentEl.addEventListener('keyup', updatePreview);
+
+    saveTemplateBtn.addEventListener('click', async () => {
+        const name = saveTemplateNameEl.value.trim();
+        const content = htmlContentEl.value;
+        if (!name) {
+            showToast('Please enter a template name.', false);
+            return;
+        }
+        try {
+            const response = await fetch("{% url 'ai_agent_pitch:save_template' %}", {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, html_content: content })
+            });
+            const data = await response.json();
+            showToast(data.message, data.status === 'success');
+            if (data.status === 'success') {
+                // Add new template to dropdown if it doesn't exist
+                if (![...loadTemplateEl.options].some(opt => opt.value == data.template_id)) {
+                    const newOption = new Option(data.template_name, data.template_id);
+                    loadTemplateEl.add(newOption);
+                }
+                loadTemplateEl.value = data.template_id;
+            }
+        } catch (error) {
+            showToast('An error occurred while saving.', false);
+        }
+    });
+
+    loadTemplateEl.addEventListener('change', async (e) => {
+        const templateId = e.target.value;
+        if (!templateId) {
+            htmlContentEl.value = '';
+            updatePreview();
+            return;
+        }
+        try {
+            const response = await fetch(`/pitch/load-template/${templateId}/`);
+            const data = await response.json();
+            if (data.status === 'success') {
+                htmlContentEl.value = data.html_content;
+                updatePreview();
+                // Also update the save name field for easy updating
+                saveTemplateNameEl.value = e.target.options[e.target.selectedIndex].text;
+            } else {
+                showToast(data.message, false);
+            }
+        } catch (error) {
+            showToast('Failed to load template.', false);
+        }
+    });
+
+    generateSubjectBtn.addEventListener('click', async () => {
+        generateSubjectBtn.textContent = 'Generating...';
+        generateSubjectBtn.disabled = true;
+        try {
+            const response = await fetch("{% url 'ai_agent_pitch:generate_subject' %}", { method: 'POST' });
+            const data = await response.json();
+            if (data.status === 'success') {
+                subjectSuggestionsEl.innerHTML = '';
+                data.subjects.forEach(sub => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = sub;
+                    btn.className = 'text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 py-1 px-3 rounded-full transition-colors';
+                    btn.onclick = () => { subjectEl.value = sub; };
+                    subjectSuggestionsEl.appendChild(btn);
+                });
+            }
+        } catch (error) {
+            showToast('Failed to generate subjects.', false);
+        } finally {
+            generateSubjectBtn.textContent = 'AI Suggest';
+            generateSubjectBtn.disabled = false;
+        }
+    });
+
+    zoomInBtn.addEventListener('click', () => setZoom(currentZoom + 0.1));
+    zoomOutBtn.addEventListener('click', () => setZoom(currentZoom - 0.1));
+  </script>
+</div>
+{% endblock %}

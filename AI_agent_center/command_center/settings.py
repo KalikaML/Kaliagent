@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     'core',
     'marketing_outreach',
     'procurement',
+    'ai_agent_pitch',
 ]
 
 MIDDLEWARE = [
@@ -113,3 +114,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # For Development: Emails will be printed to the console where you run `manage.py runserver`
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+
+# EMAIL CONFIGURATION
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'kalisoft308@gmail.com'  # Your Gmail address
+EMAIL_HOST_PASSWORD = 'mbzy anvd sfko jzfn' # Paste your App Password here
