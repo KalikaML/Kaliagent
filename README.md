@@ -1,20 +1,32 @@
-# 🤖🪄 **AI Agents Store** &nbsp;*Where intelligent multi-agents come alive!*
+# 🤖🪄 **AI Agents Store** &nbsp;*Where intelligent multi-agents come alive!*  
+![KalisoftAI Logo](./KalisoftAI-logo.jpg)  
 
-Welcome to the **AI Agents Store**, a curated collection of autonomous, cooperative agents ready to super-charge your workflows. Each solution below includes a quick-view feature list and a tappable thumbnail that launches a demo video. Explore, click, and let the agents do the rest!
+Welcome to the **AI Agents Store**, a curated collection of autonomous, cooperative agents ready to super-charge your workflows. Each solution below features a quick-view feature list, a tappable thumbnail launching a demo video, AND an inbuilt interactive video preview for seamless engagement. Explore, click, and watch your future unfold — all with a fresh, vibrant palette inspired by trending UI colors! ✨🟣🟢🔵🟠  
 
 ---
 
 ## 🛠️ ProcureAI — *Sourcing, Simplified*
 
-| ⚙️ Feature | 🌟 Description |
-|-----------|---------------|
-| Kanban Pipeline | 6 fully automated procurement stages |
+| ⚙️ Feature       | 🌟 Description                                    |
+|------------------|--------------------------------------------------|
+| Kanban Pipeline  | 6 fully automated procurement stages             |
 | Multi-Agent Crew | Five specialized agents coordinating RFQs, bids & approvals |
-| Request Intake | Manual **and** bulk-upload creation |
-| Transparency | Real-time action logs and routed approvals |
+| Request Intake   | Manual **and** bulk-upload creation               |
+| Transparency    | Real-time action logs and routed approvals        |
 
-[![ProcureAI Demo](https://img.youtube.com/vi/E-GD4qSi43g/hqdefault.jpg)](https://youtu.be/E-GD4qSi43g)  
-*Click to watch the agents hustle behind the scenes!*
+<p align="center">
+  <a href="https://youtu.be/E-GD4qSi43g" target="_blank">
+    <img src="https://img.youtube.com/vi/E-GD4qSi43g/hqdefault.jpg" alt="ProcureAI Demo" style="max-width:360px; border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"/>
+  </a>
+</p>
+<p align="center" style="font-style:italic; color:#6B46C1;">
+  Click to watch the agents hustle behind the scenes!
+</p>
+
+<video width="360" height="202" controls poster="https://img.youtube.com/vi/E-GD4qSi43g/hqdefault.jpg" style="border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin: 0 auto; display: block;">
+  <source src="https://www.youtube.com/embed/E-GD4qSi43g" type="video/mp4">
+  Sorry, your browser doesn't support embedded videos.
+</video>
 
 ---
 
@@ -25,10 +37,21 @@ Welcome to the **AI Agents Store**, a curated collection of autonomous, cooperat
 - 🎯 **Smart Targeting** – Search & filter companies in seconds  
 - 🧩 **Contact Extraction** – Pull decision-makers at lightning speed  
 - ✍️ **AI Emails** – Auto-draft, personalize, schedule, repeat  
-- 🛠️ **Profile Tuning** – Fine-grain agent behavior per campaign
+- 🛠️ **Profile Tuning** – Fine-grain agent behavior per campaign  
 
-[![MarketingAI Demo](https://img.youtube.com/vi/MwRo6yTgVJs/hqdefault.jpg)](https://youtu.be/MwRo6yTgVJs)  
-*Click to see your next 1,000 prospects written (almost) by magic.*
+<p align="center">
+  <a href="https://youtu.be/MwRo6yTgVJs" target="_blank">
+    <img src="https://img.youtube.com/vi/MwRo6yTgVJs/hqdefault.jpg" alt="MarketingAI Demo" style="max-width:360px; border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"/>
+  </a>
+</p>
+<p align="center" style="font-style:italic; color:#38A169;">
+  Click to see your next 1,000 prospects written (almost) by magic.
+</p>
+
+<video width="360" height="202" controls poster="https://img.youtube.com/vi/MwRo6yTgVJs/hqdefault.jpg" style="border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin: 0 auto; display: block;">
+  <source src="https://www.youtube.com/embed/MwRo6yTgVJs" type="video/mp4">
+  Sorry, your browser doesn't support embedded videos.
+</video>
 
 ---
 
@@ -36,8 +59,19 @@ Welcome to the **AI Agents Store**, a curated collection of autonomous, cooperat
 
 Lights, camera, 🚀! Turn long-form content into viral-ready shorts with a single click.
 
-[![Video Shorts Demo](https://img.youtube.com/vi/Fpa-GR39Lzw/hqdefault.jpg)](https://www.youtube.com/watch?v=Fpa-GR39Lzw)  
-*Watch the reel-making agents slice, dice & dazzle!*
+<p align="center">
+  <a href="https://www.youtube.com/watch?v=Fpa-GR39Lzw" target="_blank">
+    <img src="https://img.youtube.com/vi/Fpa-GR39Lzw/hqdefault.jpg" alt="Video Shorts Demo" style="max-width:360px; border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);"/>
+  </a>
+</p>
+<p align="center" style="font-style:italic; color:#D69E2E;">
+  Watch the reel-making agents slice, dice & dazzle!
+</p>
+
+<video width="360" height="202" controls poster="https://img.youtube.com/vi/Fpa-GR39Lzw/hqdefault.jpg" style="border-radius:10px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); margin: 0 auto; display: block;">
+  <source src="https://www.youtube.com/embed/Fpa-GR39Lzw" type="video/mp4">
+  Sorry, your browser doesn't support embedded videos.
+</video>
 
 ---
 
@@ -46,8 +80,28 @@ Lights, camera, 🚀! Turn long-form content into viral-ready shorts with a sing
 **Main Flow:**  
 `App Launch` → `Agent Selection` → `Choose Creative Type`
 
-| ⏱️ Time Saved | 💰 Cost Cut | 🎯 Accuracy | 📊 Analytics |
-|--------------|-----------|------------|-------------|
-| 45+ hrs / month | ₹ 1,245,000 / quarter | 90 % + match | Real-time dashboards |
+| ⏱️ Time Saved       | 💰 Cost Cut            | 🎯 Accuracy             | 📊 Analytics               |
+|---------------------|-----------------------|------------------------|---------------------------|
+| 45+ hrs / month     | ₹ 1,245,000 / quarter | 90 % + match           | Real-time dashboards       |
 
-> **Tip:** Hover over any thumbnail above and smash that play button. Let the multi-agent squads show you how effortless automation can be!
+---
+
+> 🔮 **Pro Tip:** Hover over or tap any thumbnail above, then smash that vibrant play button. Let the multi-agent squads dazzle you with effortless automation and creative mastery!
+
+---
+
+*Made with 💜 by KalisoftAI*  
+![KalisoftAI Logo](./KalisoftAI-logo.jpg)  
+
+---
+
+<style>
+  /* GitHub does not support CSS in README; this is for preview use only */
+  video {
+    border-radius: 12px;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.25);
+  }
+  p {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+</style>
