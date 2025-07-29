@@ -1,5 +1,5 @@
 # 🤖🪄 **AI Agents Store** &nbsp;*Where intelligent multi-agents come alive!*  
-![KalisoftAI Logo](./KalisoftAI-logo.jpg)  
+![KalisoftAI Logo](./KalisoftAI_logo.jpg)  
 
 Welcome to the **AI Agents Store**, a curated collection of autonomous, cooperative agents ready to super-charge your workflows. Each solution below features a quick-view feature list, a tappable thumbnail launching a demo video, AND an inbuilt interactive video preview for seamless engagement. Explore, click, and watch your future unfold — all with a fresh, vibrant palette inspired by trending UI colors! ✨🟣🟢🔵🟠  
 
@@ -91,7 +91,7 @@ Lights, camera, 🚀! Turn long-form content into viral-ready shorts with a sing
 ---
 
 *Made with 💜 by KalisoftAI*  
-![KalisoftAI Logo](./KalisoftAI-logo.jpg)  
+![KalisoftAI_Logo](./KalisoftAI-logo.jpg)  
 
 ---
 
