@@ -13,3 +13,13 @@ requests~=2.32
 playwright
 bs4
 google-generativeai
+
+sendgrid
+# For downloading and processing YouTube videos
+yt-dlp
+moviepy
+google-generativeai
+webvtt-py
+google-api-python-client
+google-auth-oauthlib
+webvtt-py

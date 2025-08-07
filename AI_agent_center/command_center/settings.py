@@ -8,8 +8,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env file
 load_dotenv(os.path.join(BASE_DIR, '.env'))
 
+# Security settings
+GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
+YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
+
 # Quick-start development settings
 SECRET_KEY = os.getenv('SECRET_KEY')
+
+
+
 DEBUG = True
 ALLOWED_HOSTS = ['*']  # Restrict in production
 
@@ -24,6 +31,7 @@ INSTALLED_APPS = [
     'marketing_outreach',
     'procurement',
     'ai_agent_pitch',
+    'shorts_app',  # Add this line
 ]
 
 MIDDLEWARE = [
@@ -86,6 +94,10 @@ USE_TZ = True
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# Media files configuration
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

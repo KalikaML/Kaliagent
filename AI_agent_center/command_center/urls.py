@@ -12,5 +12,8 @@ urlpatterns = [
     path('marketing/', include('marketing_outreach.urls')),
     path('procurement/', include('procurement.urls')),
     path('pitch/', include('ai_agent_pitch.urls')),
-    
+    path('shorts/', include('shorts_app.urls')),
 ]
+
+if settings.DEBUG:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
