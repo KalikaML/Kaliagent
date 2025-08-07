@@ -11,5 +11,5 @@ google-search-results~=2.4
 requests~=2.32  
 
 playwright
-
+bs4
 google-generativeai

@@ -1,4 +1,5 @@
-{% extends "core/base.html" %} {% block content %}
+{% extends "core/base.html" %}
+{% block content %}
 <div
   class="w-full h-screen bg-slate-900 text-slate-300 flex flex-col p-4 sm:p-6 lg:p-8"
 >
@@ -6,8 +7,14 @@
   <div class="text-center mb-6 flex-shrink-0">
     <h1 class="text-4xl font-bold text-white">AI Gmail Pitch Agent</h1>
     <p class="text-slate-400 mt-2">
-      Craft, Preview, and Send Professional HTML Emails Instantly.
+      Craft, Enhance, and Send Professional HTML Emails Instantly.
     </p>
+    <a
+      href="{% url 'ai_agent_pitch:dashboard' %}"
+      class="inline-block bg-purple-600 text-white font-semibold py-3 px-6 mt-4 rounded-lg hover:bg-purple-500 transition-all duration-300 transform hover:scale-105"
+    >
+      View Campaign Dashboard
+    </a>
   </div>
 
   <form
@@ -75,10 +82,19 @@
           <textarea
             id="html_content"
             name="html_content"
-            onkeyup="updatePreview()"
             class="w-full h-full flex-grow bg-slate-900 border border-slate-600 rounded-lg p-4 font-mono text-sm text-slate-300 focus:ring-2 focus:ring-purple-500"
             placeholder="Paste your HTML code here or load a template..."
           ></textarea>
+        </div>
+
+        <!-- AI Enhancement Section -->
+        <div id="ai-enhancement-section" class="hidden">
+            <label for="ai_prompt" class="text-lg font-semibold text-white mb-2">Enhance with AI</label>
+            <p class="text-sm text-slate-400 mb-2">e.g., "Make it vibrant" or "Use a professional blue color scheme".</p>
+            <div class="flex gap-2">
+                <input type="text" id="ai_prompt" class="w-full bg-slate-900 border border-slate-600 rounded-lg p-3 text-slate-300 focus:ring-2 focus:ring-purple-500" placeholder="Enter your prompt...">
+                <button type="button" id="enhance-btn" class="bg-rose-600 text-white font-semibold py-3 px-4 rounded-lg hover:bg-rose-500 whitespace-nowrap">Enhance</button>
+            </div>
         </div>
 
         <!-- Subject Line -->
@@ -202,135 +218,233 @@
     const zoomLevelEl = document.getElementById('zoom-level');
     const toastEl = document.getElementById('toast');
     const toastMessageEl = document.getElementById('toast-message');
+    const aiEnhancementSection = document.getElementById('ai-enhancement-section');
+    const enhanceBtn = document.getElementById('enhance-btn');
+    const aiPromptEl = document.getElementById('ai_prompt');
 
     // --- State ---
     let currentZoom = 1.0;
 
     // --- Functions ---
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+          const cookies = document.cookie.split(';');
+          for (let i = 0; i < cookies.length; i++) {
+              const cookie = cookies[i].trim();
+              if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                  cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                  break;
+              }
+          }
+      }
+      return cookieValue;
+    }
+
     function updatePreview() {
-        previewFrame.srcdoc = htmlContentEl.value;
+      previewFrame.srcdoc = htmlContentEl.value || '<p>No content to display.</p>';
+    }
+
+    function toggleAiSection() {
+      if (htmlContentEl.value.trim() !== '') {
+        aiEnhancementSection.classList.remove('hidden');
+      } else {
+        aiEnhancementSection.classList.add('hidden');
+      }
     }
 
     function showToast(message, isSuccess = true) {
-        toastMessageEl.textContent = message;
-        toastEl.className = 'fixed top-5 right-5 p-4 rounded-lg text-white transition-all duration-300 z-50'; // Reset classes and add z-index
-        if (isSuccess) {
-            toastEl.classList.add('bg-green-500');
-        } else {
-            toastEl.classList.add('bg-red-500');
-        }
-        toastEl.classList.remove('translate-x-[120%]');
-        toastEl.classList.add('translate-x-0');
+      toastMessageEl.textContent = message;
+      toastEl.className = 'fixed top-5 right-5 p-4 rounded-lg text-white transition-all duration-300 z-50';
+      toastEl.classList.add(isSuccess ? 'bg-green-500' : 'bg-red-500');
+      toastEl.classList.remove('translate-x-[120%]');
+      toastEl.classList.add('translate-x-0');
 
-        setTimeout(() => {
-            toastEl.classList.remove('translate-x-0');
-            toastEl.classList.add('translate-x-[120%]');
-        }, 4000);
+      setTimeout(() => {
+        toastEl.classList.remove('translate-x-0');
+        toastEl.classList.add('translate-x-[120%]');
+      }, 4000);
     }
 
     function setZoom(level) {
-        currentZoom = Math.max(0.5, Math.min(1.5, level)); // Clamp zoom between 50% and 150%
-        previewFrame.style.transform = `scale(${currentZoom})`;
-        zoomLevelEl.textContent = `${Math.round(currentZoom * 100)}%`;
+      currentZoom = Math.max(0.5, Math.min(1.5, level));
+      previewFrame.style.transform = `scale(${currentZoom})`;
+      zoomLevelEl.textContent = `${Math.round(currentZoom * 100)}%`;
     }
 
     // --- Event Listeners ---
     document.addEventListener('DOMContentLoaded', () => {
-        updatePreview(); // Initial preview update
+      updatePreview();
+      toggleAiSection();
 
-        // Safely pass Django messages to JavaScript to prevent syntax errors
-        const djangoMessages = [
-            {% for message in messages %}
-            {
-                "message": "{{ message.message|escapejs }}",
-                "tags": "{{ message.tags }}"
-            },
-            {% endfor %}
-        ];
+      const djangoMessages = [
+        {% for message in messages %}
+        {
+          "message": "{{ message.message|escapejs }}",
+          "tags": "{{ message.tags }}"
+        },
+        {% endfor %}
+      ];
 
-        if (djangoMessages.length > 0) {
-            djangoMessages.forEach(msg => {
-                showToast(msg.message, msg.tags === "success");
-            });
-        }
+      if (djangoMessages.length > 0) {
+        djangoMessages.forEach(msg => {
+          showToast(msg.message, msg.tags === "success");
+        });
+      }
     });
 
-    htmlContentEl.addEventListener('keyup', updatePreview);
+    htmlContentEl.addEventListener('input', () => {
+      updatePreview();
+      toggleAiSection();
+    });
 
     saveTemplateBtn.addEventListener('click', async () => {
-        const name = saveTemplateNameEl.value.trim();
-        const content = htmlContentEl.value;
-        if (!name) {
-            showToast('Please enter a template name.', false);
-            return;
+      const name = saveTemplateNameEl.value.trim();
+      const content = htmlContentEl.value;
+      if (!name) {
+        showToast('Please enter a template name.', false);
+        return;
+      }
+      if (!content) {
+        showToast('HTML content cannot be empty.', false);
+        return;
+      }
+      try {
+        const response = await fetch("{% url 'ai_agent_pitch:save_template' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ name, html_content: content })
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        try {
-            const response = await fetch("{% url 'ai_agent_pitch:save_template' %}", {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name, html_content: content })
-            });
-            const data = await response.json();
-            showToast(data.message, data.status === 'success');
-            if (data.status === 'success') {
-                // Add new template to dropdown if it doesn't exist
-                if (![...loadTemplateEl.options].some(opt => opt.value == data.template_id)) {
-                    const newOption = new Option(data.template_name, data.template_id);
-                    loadTemplateEl.add(newOption);
-                }
-                loadTemplateEl.value = data.template_id;
-            }
-        } catch (error) {
-            showToast('An error occurred while saving.', false);
+        const data = await response.json();
+        showToast(data.message, data.status === 'success');
+        if (data.status === 'success') {
+          if (![...loadTemplateEl.options].some(opt => opt.value == data.template_id)) {
+            const newOption = new Option(data.template_name, data.template_id);
+            loadTemplateEl.add(newOption);
+          }
+          loadTemplateEl.value = data.template_id;
         }
+      } catch (error) {
+        showToast(`Failed to save template: ${error.message}`, false);
+      }
     });
 
     loadTemplateEl.addEventListener('change', async (e) => {
-        const templateId = e.target.value;
-        if (!templateId) {
-            htmlContentEl.value = '';
-            updatePreview();
-            return;
+      const templateId = e.target.value;
+      if (!templateId) {
+        htmlContentEl.value = '';
+        updatePreview();
+        toggleAiSection();
+        return;
+      }
+      try {
+        const response = await fetch(`{% url 'ai_agent_pitch:load_template' template_id=0 %}`.replace('0', templateId), {
+          method: 'GET',
+          headers: {
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        try {
-            const response = await fetch(`/pitch/load-template/${templateId}/`);
-            const data = await response.json();
-            if (data.status === 'success') {
-                htmlContentEl.value = data.html_content;
-                updatePreview();
-                // Also update the save name field for easy updating
-                saveTemplateNameEl.value = e.target.options[e.target.selectedIndex].text;
-            } else {
-                showToast(data.message, false);
-            }
-        } catch (error) {
-            showToast('Failed to load template.', false);
+        const data = await response.json();
+        if (data.status === 'success') {
+          htmlContentEl.value = data.html_content;
+          updatePreview();
+          toggleAiSection();
+          saveTemplateNameEl.value = e.target.options[e.target.selectedIndex].text;
+        } else {
+          showToast(data.message, false);
         }
+      } catch (error) {
+        showToast(`Failed to load template: ${error.message}`, false);
+      }
     });
 
     generateSubjectBtn.addEventListener('click', async () => {
-        generateSubjectBtn.textContent = 'Generating...';
-        generateSubjectBtn.disabled = true;
-        try {
-            const response = await fetch("{% url 'ai_agent_pitch:generate_subject' %}", { method: 'POST' });
-            const data = await response.json();
-            if (data.status === 'success') {
-                subjectSuggestionsEl.innerHTML = '';
-                data.subjects.forEach(sub => {
-                    const btn = document.createElement('button');
-                    btn.type = 'button';
-                    btn.textContent = sub;
-                    btn.className = 'text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 py-1 px-3 rounded-full transition-colors';
-                    btn.onclick = () => { subjectEl.value = sub; };
-                    subjectSuggestionsEl.appendChild(btn);
-                });
-            }
-        } catch (error) {
-            showToast('Failed to generate subjects.', false);
-        } finally {
-            generateSubjectBtn.textContent = 'AI Suggest';
-            generateSubjectBtn.disabled = false;
+      generateSubjectBtn.textContent = 'Generating...';
+      generateSubjectBtn.disabled = true;
+      try {
+        const response = await fetch("{% url 'ai_agent_pitch:generate_subject' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          }
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
         }
+        const data = await response.json();
+        if (data.status === 'success') {
+          subjectSuggestionsEl.innerHTML = '';
+          data.subjects.forEach(sub => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.textContent = sub;
+            btn.className = 'text-sm bg-slate-700 hover:bg-slate-600 text-slate-300 py-1 px-3 rounded-full transition-colors';
+            btn.onclick = () => { subjectEl.value = sub; };
+            subjectSuggestionsEl.appendChild(btn);
+          });
+        } else {
+          showToast(data.message, false);
+        }
+      } catch (error) {
+        showToast(`Failed to generate subjects: ${error.message}`, false);
+      } finally {
+        generateSubjectBtn.textContent = 'AI Suggest';
+        generateSubjectBtn.disabled = false;
+      }
+    });
+
+    enhanceBtn.addEventListener('click', async () => {
+      const prompt = aiPromptEl.value.trim();
+      const content = htmlContentEl.value;
+
+      if (!prompt) {
+        showToast('Please enter a prompt for the AI.', false);
+        return;
+      }
+      if (!content) {
+        showToast('HTML content is empty. Load a template first.', false);
+        return;
+      }
+
+      enhanceBtn.textContent = 'Enhancing...';
+      enhanceBtn.disabled = true;
+
+      try {
+        const response = await fetch("{% url 'ai_agent_pitch:enhance_with_ai' %}", {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+          },
+          body: JSON.stringify({ prompt: prompt, html_content: content })
+        });
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+        const data = await response.json();
+        if (data.status === 'success') {
+          htmlContentEl.value = data.html_content;
+          updatePreview();
+          showToast('Email content enhanced successfully!', true);
+        } else {
+          showToast(data.message, false);
+        }
+      } catch (error) {
+        showToast(`An error occurred during enhancement: ${error.message}`, false);
+      } finally {
+        enhanceBtn.textContent = 'Enhance';
+        enhanceBtn.disabled = false;
+      }
     });
 
     zoomInBtn.addEventListener('click', () => setZoom(currentZoom + 0.1));
