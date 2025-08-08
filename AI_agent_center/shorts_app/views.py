@@ -86,83 +86,98 @@ def check_progress(request, task_id):
 
 
 def process_video(request):
-    if request.method != 'POST': return JsonResponse({'status': 'error', 'message': 'Invalid request.'})
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Invalid request.'})
 
-    video_url = request.POST.get('video_url')
-    video_id = request.POST.get('video_id') or get_youtube_id(video_url)
-    if not video_id: return JsonResponse({'status': 'error', 'message': 'Valid YouTube URL or Video ID is required.'})
+    try:
+        # This correctly reads the JSON data sent by the updated JavaScript
+        data = json.loads(request.body)
+        video_url = data.get('video_url')
+        video_id = data.get('video_id') or get_youtube_id(video_url)
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Invalid JSON data.'}, status=400)
+
+    if not video_id:
+        return JsonResponse({'status': 'error', 'message': 'Valid YouTube URL or Video ID is required.'})
 
     task_id = str(uuid.uuid4())
-
-    def long_running_task():
-        # This nested function's logic is mostly the same, but the progress hook is updated.
-        def progress_hook(d):
-            if d['status'] == 'downloading':
-                # Clean up the percentage string and send it back
-                percent_str = d.get('_percent_str', '0.0%')
-                cleaned_str = re.sub(r'\x1b\[[0-9;]*m', '', percent_str).replace('%', '').strip()
-                try:
-                    progress = float(cleaned_str)
-                    cache.set(task_id,
-                              {"status": "processing", "progress": progress, "message": "Downloading video..."})
-                except ValueError:
-                    pass  # Ignore if parsing fails
-            elif d['status'] == 'finished':
-                cache.set(task_id,
-                          {"status": "processing", "progress": 100, "message": "Download complete. Analyzing..."})
-
-        try:
-            video_record = DownloadedVideo.objects.get(video_id=video_id)
-            if not video_record.suggestions or not isinstance(video_record.suggestions, list):
-                raise ValueError("Suggestions needed.")
-            cache.set(task_id, {"status": "processing", "progress": 100,
-                                "message": "Found existing video. Loading suggestions..."})
-        except (DownloadedVideo.DoesNotExist, ValueError):
-            try:
-                video_full_path = os.path.join(settings.MEDIA_ROOT, 'videos', f'{video_id}.mp4')
-                if not os.path.exists(video_full_path):
-                    if not video_url:
-                        cache.set(task_id, {'status': 'error',
-                                            'message': f'Record for {video_id} not found and no URL provided.'})
-                        return
-                    output_dir = os.path.join(settings.MEDIA_ROOT, 'videos')
-                    os.makedirs(output_dir, exist_ok=True)
-                    ydl_opts = {
-                        'format': 'best[height<=1080][ext=mp4]',
-                        'outtmpl': os.path.join(output_dir, f'{video_id}.%(ext)s'),
-                        'merge_output_format': 'mp4', 'noplaylist': True, 'writesubtitles': True,
-                        'writeautomaticsub': True,
-                        'subtitleslangs': ['en'], 'subtitlesformat': 'vtt', 'writethumbnail': True, 'nocolor': True,
-                        'progress_hooks': [progress_hook],
-                    }
-                    with YoutubeDL(ydl_opts) as ydl:
-                        info = ydl.extract_info(video_url, download=True)
-                    thumbnail_path = f'/media/videos/{video_id}.webp' if os.path.exists(
-                        os.path.join(output_dir, f'{video_id}.webp')) else f'/media/videos/{video_id}.jpg'
-                    video_record, _ = DownloadedVideo.objects.update_or_create(
-                        video_id=video_id,
-                        defaults={'title': info.get('title', 'N/A'), 'duration': info.get('duration', 0),
-                                  'file_path': f'/media/videos/{video_id}.mp4', 'thumbnail_path': thumbnail_path}
-                    )
-                else:
-                    video_record = get_object_or_404(DownloadedVideo, video_id=video_id)
-                transcript_path = os.path.join(settings.MEDIA_ROOT, 'videos', f'{video_id}.en.vtt')
-                suggested_clips = []
-                if os.path.exists(transcript_path):
-                    transcript = " ".join([c.text.strip().replace('\n', ' ') for c in webvtt.read(transcript_path)])
-                    if transcript: suggested_clips = get_ai_suggested_clips(transcript, video_record.duration)
-                video_record.suggestions = suggested_clips
-                video_record.save()
-            except Exception as e:
-                cache.set(task_id, {'status': 'error', 'message': f'Processing failed: {e}'})
-                return
-        video_record = get_object_or_404(DownloadedVideo, video_id=video_id)
-        cache.set(task_id, {'status': 'complete', 'result': {
-            'video_id': video_id, 'video_title': video_record.title, 'suggested_clips': video_record.suggestions,
-        }})
-
-    threading.Thread(target=long_running_task).start()
+    threading.Thread(target=long_running_task, args=(video_id, video_url, task_id)).start()
     return JsonResponse({'status': 'processing', 'task_id': task_id})
+     
+
+def long_running_task(video_id, video_url, task_id):
+    """
+    This function runs in a background thread to handle the heavy lifting of
+    downloading the video and its assets using yt-dlp.
+    """
+    
+    def progress_hook(d):
+        """A hook for yt-dlp to report download progress."""
+        if d['status'] == 'downloading':
+            # Extract percentage and format a message
+            progress_percent = d.get('_percent_str', '0%').strip()
+            # Remove ANSI color codes
+            progress_percent_clean = re.sub(r'\x1b\[[0-9;]*m', '', progress_percent)
+            
+            progress_data = {
+                'status': 'processing',
+                'message': f"Downloading video... {progress_percent_clean}",
+                'progress': float(progress_percent_clean.replace('%',''))
+            }
+            cache.set(task_id, progress_data, timeout=60)
+
+    try:
+        cache.set(task_id, {'status': 'processing', 'message': 'Starting download...', 'progress': 0}, timeout=60)
+        
+        output_dir = os.path.join(settings.MEDIA_ROOT, 'videos')
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # This dictionary contains all the options for yt-dlp
+        ydl_opts = {
+            'format': 'best[height<=1080][ext=mp4]',
+            'outtmpl': os.path.join(output_dir, f'{video_id}.%(ext)s'),
+            'merge_output_format': 'mp4',
+            'noplaylist': True,
+            'writesubtitles': True,
+            'writeautomaticsub': True,
+            'subtitleslangs': ['en'],
+            'subtitlesformat': 'vtt',
+            'writethumbnail': True,
+            'nocolor': True,
+            'progress_hooks': [progress_hook],
+            # This line fixes the "429 Too Many Requests" error
+            'cookiefile': os.path.join(settings.BASE_DIR, 'youtube-cookies.txt'),
+        }
+
+        with YoutubeDL(ydl_opts) as ydl:
+            info = ydl.extract_info(video_url, download=True)
+
+        # After download, save metadata to the database
+        video_path = ydl.prepare_filename(info)
+        thumbnail_path = video_path.replace(info['ext'], 'webp') # yt-dlp saves thumbnail as .webp
+        
+        # Check for existing video and update or create
+        video, created = DownloadedVideo.objects.update_or_create(
+            video_id=video_id,
+            defaults={
+                'title': info.get('title', 'No Title'),
+                'duration': info.get('duration', 0),
+                'file_path': os.path.relpath(video_path, settings.MEDIA_ROOT),
+                'thumbnail_path': os.path.relpath(thumbnail_path, settings.MEDIA_ROOT) if os.path.exists(thumbnail_path) else None
+            }
+        )
+
+        # Prepare final result for the frontend
+        result = {
+            'id': video.video_id,
+            'title': video.title,
+            'thumbnail': video.thumbnail_path,
+        }
+        cache.set(task_id, {'status': 'complete', 'message': 'Processing complete!', 'result': result}, timeout=300)
+
+    except Exception as e:
+        logging.error(f"Error processing video {video_id}: {e}")
+        cache.set(task_id, {'status': 'error', 'message': str(e)}, timeout=300)
 
 
 def generate_short(request):

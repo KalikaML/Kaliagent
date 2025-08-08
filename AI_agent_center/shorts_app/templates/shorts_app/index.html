@@ -357,26 +357,49 @@
         }
     }
 
+        
     async function startProcessing(formData, button) {
         toggleButtonLoading(button, true);
         document.getElementById('results-container').innerHTML = '';
         showProgress('generation', false);
         showProgress('processing', true, 'Initializing task...', 0);
 
+        // This is the data we will send
+        const payload = {
+            video_url: formData.get('video_url'),
+            video_id: formData.get('video_id') // Will be null for new URLs, which is fine
+        };
+
         try {
-            const response = await fetch("{% url 'shorts_app:process_video' %}", { method: 'POST', body: formData, headers: {'X-CSRFToken': csrfToken} });
+            // The fetch call is now corrected to send JSON
+            const response = await fetch("{% url 'shorts_app:process_video' %}", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(payload) // Send data as a JSON string
+            });
+
             if (!response.ok) throw new Error(`Server error: ${response.statusText}`);
+
             const data = await response.json();
+
             if (data.task_id) {
+                // NOTE: The checkProgress function in your file had an error.
+                // It needs a leading slash to work correctly.
+                // Make sure your checkProgress function uses: fetch(`/shorts/check_progress/${taskId}/`)
                 progressInterval = setInterval(() => checkProgress(data.task_id, button), 2000);
-            } else { throw new Error(data.message || 'Failed to start task.'); }
+            } else {
+                throw new Error(data.message || 'Failed to start task.');
+            }
         } catch (error) {
             displayMessage(`Error: ${error.message}`, 'error');
             toggleButtonLoading(button, false);
             showProgress('processing', false);
         }
     }
-
+    
     function checkProgress(taskId, button) {
         fetch(`/check_progress/${taskId}/`)
             .then(response => response.json())

@@ -1,4 +1,4 @@
-# In shorts_app/urls.py
+# shorts_app/urls.py
 
 from django.urls import path
 from . import views
@@ -11,7 +11,9 @@ urlpatterns = [
 
     # Background task and video processing URLs
     path('process_video/', views.process_video, name='process_video'),
-    path('check_progress/<str:task_id>/', views.check_progress, name='check_progress'),
+    
+    # This is the corrected line that fixes the 404 error
+    path('check_progress/<uuid:task_id>/', views.check_progress, name='check_progress'),
 
     # Short generation and management URLs
     path('generate_short/', views.generate_short, name='generate_short'),
@@ -21,6 +23,6 @@ urlpatterns = [
     path('delete_video/<str:video_id>/', views.delete_video, name='delete_video'),
     path('delete_short/<uuid:short_id>/', views.delete_short, name='delete_short'),
 
-    # New: Trending Videos API
+    # Trending Videos API
     path('get_trending_videos/', views.get_trending_videos, name='get_trending_videos'),
 ]
