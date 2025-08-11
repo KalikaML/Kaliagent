@@ -198,8 +198,29 @@ document.addEventListener('DOMContentLoaded', () => {
         async runRfqSend(request) { this.addLog('✅ Approval received. <b>Agent 4</b> is now sending RFQ emails...'); const response = await fetch(`/procurement/api/send-rfqs/${request.id}/`, { method: 'POST', headers: { 'X-CSRFToken': this.csrfToken } }); if (response.ok) { const data = await response.json(); this.addLog(`📬 <b>RFQs Sent!</b> ${data.message}`); this.addLog('▶️ <b>Agent 5</b> will now monitor inbox for replies.'); setTimeout(() => this.closeDrillDownModal(), 2000); } else { const errorData = await response.json(); this.addLog(`❌ Error: Could not send RFQs. ${errorData.error || 'Unknown error'}`); } },
         async runQuoteCheck(request) { this.addLog(`🤖 <b>Agent 5</b> checking inbox...`); const response = await fetch(`/procurement/api/check-and-parse-quotes/${request.id}/`, { method: 'POST', headers: { 'X-CSRFToken': this.csrfToken } }); const data = await response.json(); if (data.success) { if (data.new_quotes_found > 0) { this.addLog(`📊 <b>Success!</b> Found and parsed ${data.new_quotes_found} new quote(s).`); this.openDrillDownModal(request.id); } else this.addLog('📪 No new quotes found in this check.'); } else this.addLog(`❌ Error checking for quotes: ${data.error}`); },
         async runFinalizeRequest(request, quoteId) { this.addLog(`Finalizing request...`); const response = await fetch(`/procurement/api/finalize-request/${request.id}/`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-CSRFToken': this.csrfToken }, body: JSON.stringify({ quote_id: quoteId }) }); const data = await response.json(); if (data.success) { this.addLog(`✅ <b>Request Finalized!</b> Estimated savings: <b>₹${parseFloat(data.savings).toFixed(2)}</b>`); setTimeout(() => this.closeDrillDownModal(), 2000); } else { this.addLog(`❌ Error: Could not finalize request. ${data.error || ''}`); } },
-        showQuoteDetails(quoteId) { const quote = this.currentRequestData.quotes.find(q => q.id == quoteId); if (!quote) return; const mainPanel = this.modalContentContainer.querySelector('.lg\\:col-span-2'); if (mainPanel) { mainPanel.innerHTML = this.generateQuoteDetailView(quote); } },
-        generateModalContent(request) { const briefingPanel = `<div class="bg-slate-900 p-6 rounded-lg"><h3 class="text-xl font-bold mb-4">📝 The Briefing</h3><div class="space-y-3"><div><label class="text-sm text-slate-400">Product</label><p class="font-semibold text-lg">${request.title}</p></div><div><label class="text-sm text-slate-400">Quantity</label><p class="font-semibold text-lg">${request.quantity}</p></div><div><label class="text-sm text-slate-400">Specifications</label><p class="text-slate-300">${request.specs || 'N/A'}</p></div></div></div>`; const actionLogPanel = `<div class="bg-slate-900 p-6 rounded-lg"><h3 class="text-xl font-bold mb-4">⚡ Agent Action Log</h3><div id="action-log" class="space-y-3 text-sm h-48 overflow-y-auto pr-2"></div></div>`; let mainActionPanel; switch (request.status) { case 'agent-working': mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400 animate-pulse">Agent is working in the background...</p></div>`; break; case 'awaiting-approval': mainActionPanel = this.generateApprovalPanel(request); break; case 'quotes-received': mainActionPanel = this.generateQuotesPanel(request.quotes); break; default: mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400">No actions available at this stage.</p></div>`; } return `<div class="p-4 flex justify-between items-center border-b border-slate-700"><h2 class="text-2xl font-bold">${request.title}</h2><button id="close-modal-btn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div><div class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow"><div class="lg:col-span-1 flex flex-col gap-4">${briefingPanel}${actionLogPanel}</div><div class="lg:col-span-2">${mainActionPanel}</div></div>`; },
+        
+        showQuoteDetails(quoteId) {
+            const quote = this.currentRequestData.quotes.find(q => q.id == quoteId);
+            if (!quote) return;
+            // Create a temporary container for the modal content
+            const detailContainer = document.createElement('div');
+            detailContainer.innerHTML = this.generateQuoteDetailView(quote);
+            
+            // Replace the main panel content with the detail view
+            const mainPanel = this.modalContentContainer.querySelector('.lg\\:col-span-2');
+            if (mainPanel) {
+                mainPanel.innerHTML = ''; // Clear previous content
+                mainPanel.appendChild(detailContainer);
+
+                // Add a back button to return to the comparison view
+                const backButton = detailContainer.querySelector('.back-to-compare-btn');
+                backButton.addEventListener('click', () => {
+                    mainPanel.innerHTML = this.generateQuotesPanel(this.currentRequestData.quotes);
+                });
+            }
+        },
+
+        generateModalContent(request) { const briefingPanel = `<div class="bg-slate-900 p-6 rounded-lg"><h3 class="text-xl font-bold mb-4">📝 The Briefing</h3><div class="space-y-3"><div><label class="text-sm text-slate-400">Product</label><p class="font-semibold text-lg">${request.title}</p></div><div><label class="text-sm text-slate-400">Quantity</label><p class="font-semibold text-lg">${request.quantity}</p></div><div><label class="text-sm text-slate-400">Specifications</label><p class="text-slate-300">${request.specs || 'N/A'}</p></div></div></div>`; const actionLogPanel = `<div class="bg-slate-900 p-6 rounded-lg"><h3 class="text-xl font-bold mb-4">⚡ Agent Action Log</h3><div id="action-log" class="space-y-3 text-sm h-48 overflow-y-auto pr-2"></div></div>`; let mainActionPanel; switch (request.status) { case 'agent-working': mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400 animate-pulse">Agent is working in the background...</p></div>`; break; case 'awaiting-approval': mainActionPanel = this.generateApprovalPanel(request); break; case 'quotes-received': case 'finalized': mainActionPanel = this.generateQuotesPanel(request); break; default: mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400">No actions available at this stage.</p></div>`; } return `<div class="p-4 flex justify-between items-center border-b border-slate-700"><h2 class="text-2xl font-bold">${request.title}</h2><button id="close-modal-btn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div><div class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow"><div class="lg:col-span-1 flex flex-col gap-4">${briefingPanel}${actionLogPanel}</div><div class="lg:col-span-2">${mainActionPanel}</div></div>`; },
         
         generateApprovalPanel(request) {
             const suppliers = request.suppliers || [];
@@ -222,9 +243,89 @@ document.addEventListener('DOMContentLoaded', () => {
             return `<div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col"><h3 class="text-xl font-bold mb-2">Vetted Supplier List</h3><ul class="space-y-2 flex-grow overflow-y-auto pr-2 mb-4">${supplierListHtml}</ul><div class="border-t border-slate-700 pt-4">${(suppliers.length > 0 ? rfqDraftHtml : '')}${actionButtonHtml}</div></div>`;
         },
 
-        generateQuotesPanel(quotes = []) { const quotesHtml = quotes.map(q => `<tr class="border-b border-slate-700 hover:bg-slate-800"><td class="p-3 font-semibold">${q.supplier__name}</td><td class="p-3 text-green-400 font-bold">₹${q.price || 'N/A'}</td><td class="p-3">${q.lead_time_days || 'N/A'} days</td><td class="p-3"><button class="view-quote-btn text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded" data-quote-id="${q.id}">View</button></td></tr>`).join('') || '<tr><td colspan="4" class="text-center p-4">No valid quotes parsed yet.</td></tr>'; return `<div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col"><h3 class="text-xl font-bold mb-2">Quotation Comparison</h3><p class="text-sm text-slate-400 mb-4">Real data parsed by the agent from email replies. Click "View" for details.</p><div class="flex-grow overflow-y-auto"><table class="w-full text-left text-sm"><thead class="sticky top-0 bg-slate-900"><tr class="border-b border-slate-600"><th class="p-3">Supplier</th><th class="p-3">Price</th><th class="p-3">Lead Time</th><th class="p-3">Details</th></tr></thead><tbody>${quotesHtml}</tbody></table></div></div>`; },
-        generateQuoteDetailView(quote) { const supplier = this.currentRequestData.suppliers.find(s => s.name === quote.supplier__name); const negotiateLink = supplier && supplier.email ? `mailto:${supplier.email}?subject=Re: Quote for ${this.currentRequestData.title} (REQ-${this.currentRequestData.id})` : '#'; return `<div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col"><div class="flex justify-between items-start mb-4"><div><h3 class="text-xl font-bold">Quote Details from: ${quote.supplier__name}</h3><p class="text-sm text-slate-400">Review the full email response and finalize the request.</p></div><div class="flex gap-x-2"><a href="${negotiateLink}" class="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-4 rounded-lg text-sm">Negotiate</a><button class="finalize-request-btn bg-green-600 hover:bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm" data-quote-id="${quote.id}">Finalize & Award</button></div></div><div class="grid grid-cols-3 gap-4 mb-4 text-center"><div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Price</dt><dd class="font-bold text-lg text-green-400">₹${quote.price || 'N/A'}</dd></div><div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Lead Time</dt><dd class="font-bold text-lg">${quote.lead_time_days || 'N/A'} days</dd></div><div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Payment</dt><dd class="font-bold text-lg">${quote.payment_terms || 'N/A'}</dd></div></div><h4 class="font-bold text-slate-300 mb-2">Full Email Response:</h4><div class="flex-grow overflow-y-auto bg-slate-800 p-4 rounded-md border border-slate-700"><pre class="text-sm text-slate-300 whitespace-pre-wrap font-sans">${quote.full_email_body || 'Email body not available.'}</pre></div></div>`; },
-        attachModalEventListeners(request) { document.getElementById('close-modal-btn')?.addEventListener('click', () => this.closeDrillDownModal()); const approveBtn = document.getElementById('approve-rfq-btn'); if (approveBtn) approveBtn.addEventListener('click', () => this.runRfqSend(request)); },
+        // ✨ UPDATE: Quote comparison panel ko behtar banaya gaya hai
+        generateQuotesPanel(request) {
+            const quotes = request.quotes || [];
+            // Price ke basis par quotes ko sort karein (sabse kam sabse upar)
+            quotes.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
+            
+            const quotesHtml = quotes.map((q, index) => {
+                const supplier = this.currentRequestData.suppliers.find(s => s.name === q.supplier__name);
+                const negotiateLink = supplier && supplier.email ? `mailto:${supplier.email}?subject=Re: Quote for ${this.currentRequestData.title} (REQ-${this.currentRequestData.id})` : '#';
+                
+                let priceClass = 'text-slate-300';
+                if (index === 0) priceClass = 'text-green-400'; // Best price
+                else if (index === 1) priceClass = 'text-amber-400'; // Second best
+                
+                return `
+                <tr class="border-b border-slate-700 hover:bg-slate-800">
+                    <td class="p-3 font-semibold">${q.supplier__name}</td>
+                    <td class="p-3 font-bold ${priceClass}">₹${q.price || 'N/A'}</td>
+                    <td class="p-3">${q.lead_time_days || 'N/A'} days</td>
+                    <td class="p-3">${q.payment_terms || 'N/A'}</td>
+                    <td class="p-3">${q.discount || 'None'}</td>
+                    <td class="p-3 text-right">
+                        <button class="view-quote-btn text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded" data-quote-id="${q.id}">Details</button>
+                        <a href="${negotiateLink}" class="text-sm bg-sky-600 hover:bg-sky-500 px-3 py-1 rounded ml-2">Negotiate</a>
+                        <button class="finalize-request-btn text-sm bg-green-600 hover:bg-green-500 px-3 py-1 rounded ml-2" data-quote-id="${q.id}">Award</button>
+                    </td>
+                </tr>`
+            }).join('') || '<tr><td colspan="6" class="text-center p-4 text-slate-400">No valid quotes parsed yet. The agent is monitoring the inbox.</td></tr>'; 
+            
+            return `<div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
+                        <h3 class="text-xl font-bold mb-2">Quotation Comparison</h3>
+                        <p class="text-sm text-slate-400 mb-4">Quotes are sorted by best price. Click 'Details' to see the full email, 'Negotiate' to contact the supplier, or 'Award' to finalize.</p>
+                        <div class="flex-grow overflow-y-auto">
+                            <table class="w-full text-left text-sm">
+                                <thead class="sticky top-0 bg-slate-900 z-10">
+                                    <tr class="border-b border-slate-600">
+                                        <th class="p-3">Supplier</th>
+                                        <th class="p-3">Price (per unit)</th>
+                                        <th class="p-3">Lead Time</th>
+                                        <th class="p-3">Payment Terms</th>
+                                        <th class="p-3">Discount</th>
+                                        <th class="p-3 text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${quotesHtml}</tbody>
+                            </table>
+                        </div>
+                    </div>`; 
+        },
+
+        // ✨ UPDATE: Quote detail view ko behtar banaya gaya hai
+        generateQuoteDetailView(quote) { 
+            const supplier = this.currentRequestData.suppliers.find(s => s.name === quote.supplier__name); 
+            const negotiateLink = supplier && supplier.email ? `mailto:${supplier.email}?subject=Re: Quote for ${this.currentRequestData.title} (REQ-${this.currentRequestData.id})` : '#'; 
+            
+            return `<div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <h3 class="text-xl font-bold">Quote Details from: ${quote.supplier__name}</h3>
+                                <p class="text-sm text-slate-400">Full email response from the supplier.</p>
+                            </div>
+                            <div class="flex gap-x-2">
+                                <button class="back-to-compare-btn bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg text-sm">← Back to Comparison</button>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-4 gap-4 mb-4 text-center">
+                            <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Price</dt><dd class="font-bold text-lg text-green-400">₹${quote.price || 'N/A'}</dd></div>
+                            <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Lead Time</dt><dd class="font-bold text-lg">${quote.lead_time_days || 'N/A'} days</dd></div>
+                            <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Payment</dt><dd class="font-bold text-lg">${quote.payment_terms || 'N/A'}</dd></div>
+                            <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Discount</dt><dd class="font-bold text-lg">${quote.discount || 'None'}</dd></div>
+                        </div>
+                        <h4 class="font-bold text-slate-300 mb-2">Full Email Response:</h4>
+                        <div class="flex-grow overflow-y-auto bg-slate-800 p-4 rounded-md border border-slate-700">
+                            <pre class="text-sm text-slate-300 whitespace-pre-wrap font-sans">${quote.full_email_body || 'Email body not available.'}</pre>
+                        </div>
+                    </div>`; 
+        },
+
+        attachModalEventListeners(request) { 
+            document.getElementById('close-modal-btn')?.addEventListener('click', () => this.closeDrillDownModal()); 
+            const approveBtn = document.getElementById('approve-rfq-btn'); 
+            if (approveBtn) approveBtn.addEventListener('click', () => this.runRfqSend(request)); 
+        },
     };
     app.init();
 });
