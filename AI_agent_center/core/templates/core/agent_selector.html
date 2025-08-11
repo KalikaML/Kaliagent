@@ -1,7 +1,6 @@
 {% extends "core/base.html" %}
 
 {% block content %}
-{# The classes on this div have been changed to allow scrolling #}
 <div class="w-full h-screen flex flex-col items-center justify-start bg-slate-900 py-16 px-8 overflow-y-auto">
     
     <div class="text-center mb-12">
@@ -11,28 +10,33 @@
     
     <div class="flex flex-wrap justify-center gap-8">
 
+        <!-- Marketing Outreach AI Card -->
         <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 w-full md:w-96 text-center transform hover:-translate-y-2 transition-transform duration-300">
             <div class="mx-auto bg-cyan-500/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-cyan-400"><path d="m13 2-3 14 6 6 4-18Z"></path><path d="M17.5 2.5 16 6l-4.5 4.5 6.5 6.5L21.5 12Z"></path></svg>
             </div>
             <h2 class="text-2xl font-bold text-white mb-2">Marketing Outreach AI</h2>
             <p class="text-slate-400 mb-6">Find new prospects, extract contact information, and draft personalized outreach emails.</p>
-            <a href="#" class="block w-full bg-cyan-500 text-white font-semibold py-3 rounded-lg hover:bg-cyan-600 transition-colors">
+            <!-- THIS LINK IS NOW CORRECTED -->
+            <a href="{% url 'marketing_outreach:dashboard' %}" class="block w-full bg-cyan-500 text-white font-semibold py-3 rounded-lg hover:bg-cyan-600 transition-colors">
                 Launch Marketing Agent
             </a>
         </div>
 
+        <!-- Procurement AI Card -->
         <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 w-full md:w-96 text-center transform hover:-translate-y-2 transition-transform duration-300">
             <div class="mx-auto bg-indigo-500/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-indigo-400"><circle cx="8" cy="21" r="1"></circle><circle cx="19" cy="21" r="1"></circle><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path></svg>
             </div>
             <h2 class="text-2xl font-bold text-white mb-2">Procurement AI</h2>
             <p class="text-slate-400 mb-6">Automate your procurement lifecycle from request creation to quote comparison and finalization.</p>
-            <a href="#" class="block w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-500 transition-colors">
+            <!-- THIS LINK IS NOW CORRECTED -->
+            <a href="{% url 'procurement:dashboard' %}" class="block w-full bg-indigo-600 text-white font-semibold py-3 rounded-lg hover:bg-indigo-500 transition-colors">
                 Launch Procurement Agent
             </a>
         </div>
 
+        <!-- AI Agent Pitch Card -->
         <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 w-full md:w-96 text-center transform hover:-translate-y-2 transition-transform duration-300">
             <div class="mx-auto bg-purple-500/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-purple-400"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline></svg>
@@ -44,6 +48,7 @@
             </a>
         </div>
 
+        <!-- Shorts Video AI Agent Card -->
         <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-8 w-full md:w-96 text-center transform hover:-translate-y-2 transition-transform duration-300">
             <div class="mx-auto bg-red-500/10 rounded-full h-16 w-16 flex items-center justify-center mb-4">
                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-red-400">
