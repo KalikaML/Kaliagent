@@ -14,6 +14,7 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
 # Quick-start development settings
 SECRET_KEY = os.getenv('SECRET_KEY')
+SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
 
 
 
