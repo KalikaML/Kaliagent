@@ -15,7 +15,7 @@ google-generativeai
 sendgrid
 # For downloading and processing YouTube videos
 yt-dlp
-moviepy
+moviepy==1.0.3
 google-generativeai
 webvtt-py
 google-api-python-client
