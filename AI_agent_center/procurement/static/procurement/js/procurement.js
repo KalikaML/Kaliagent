@@ -36,7 +36,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.files.length > 0) this.fileUploadStatus.textContent = `File selected: ${e.target.files[0].name}`;
             });
             
-            this.checkAllQuotesBtn.addEventListener('click', () => this.runCheckAllRfqs());
+            // ✨ FIX: Check if the button exists before adding an event listener to prevent a crash.
+            if (this.checkAllQuotesBtn) {
+                this.checkAllQuotesBtn.addEventListener('click', () => this.runCheckAllRfqs());
+            }
 
             this.kanbanBoard.addEventListener('click', (e) => {
                 const card = e.target.closest('.kanban-card');
