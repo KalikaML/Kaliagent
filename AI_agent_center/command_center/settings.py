@@ -14,7 +14,7 @@ YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')
 
 # Quick-start development settings
 SECRET_KEY = os.getenv('SECRET_KEY')
-SERPAPI_API_KEY = os.getenv("SERPAPI_API_KEY")
+SERPAPI_API_KEY = None 
 
 
 
@@ -108,6 +108,8 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 DEFAULT_FROM_NAME = 'Kalika AI'
 SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+# In settings.py
+SEARXNG_INSTANCE_URL = 'http://localhost:8080'
 
 # Logging Configuration
 LOGGING = {

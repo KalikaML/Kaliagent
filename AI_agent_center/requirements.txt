@@ -23,7 +23,7 @@ google-auth-oauthlib
 webvtt-py
 
 pytesseract==0.3.13
-Pillow==11.3.0
+Pillow
 fitz  # It's PyMuPDF
 PyMuPDF==1.26.3
 #imaplib  # stdlib, do not add
@@ -43,3 +43,4 @@ google-search-results
 frontend
 tools
 tesseract
+httpx
