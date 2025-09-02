@@ -152,3 +152,12 @@ GMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')
 GMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address
 # IMPORTANT: Use a Gmail "App Password" if using Gmail
 GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')
+
+# Django ko batayein ki aapka custom login page kahan hai.
+LOGIN_URL = 'core:login'
+
+# Login karne ke baad user ko kahan bhejna hai.
+LOGIN_REDIRECT_URL = 'core:agent_selector'
+
+# Logout karne ke baad user ko kahan bhejna hai.
+LOGOUT_REDIRECT_URL = 'core:login'

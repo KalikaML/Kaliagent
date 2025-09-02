@@ -44,8 +44,8 @@ def procurement_dashboard_view(request):
         {'id': 'new-request', 'title': '📝 New Request', 'color': 'border-sky-500'},
         {'id': 'agent-working', 'title': '🤖 Agent Working', 'color': 'border-amber-500'},
         {'id': 'awaiting-approval', 'title': '⏳ Awaiting Approval', 'color': 'border-purple-500'},
-        {'id': 'rfqs-sent', 'title': '📧 RFQs Sent', 'color': 'border-blue-500'},
-        {'id': 'quotes-received', 'title': '📥 Quotes Received', 'color': 'border-green-500'},
+        {'id': 'rfqs-sent', 'title': '📨 RFQs Sent', 'color': 'border-blue-500'},
+        {'id': 'quotes-received', 'title': '📊 Quotes Received', 'color': 'border-green-500'},
         {'id': 'finalized', 'title': '🏆 Finalized', 'color': 'border-slate-500'}
     ]
     all_requests = ProcurementRequest.objects.all().order_by('-created_at')

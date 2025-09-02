@@ -23,4 +23,4 @@ class Command(BaseCommand):
                 self.stdout.write(self.style.ERROR(f'An error occurred in the agent loop: {e}'))
             
             self.stdout.write('Scan complete. Waiting for 300 seconds...')
-            time.sleep(300) # हर 5 मिनट में जांचें
+            time.sleep(300) # Check every 5 minutes

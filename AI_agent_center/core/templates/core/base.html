@@ -13,18 +13,18 @@
             font-family: 'Inter', sans-serif;
             background-color: #0f172a; /* slate-900 */
             color: #f8fafc; /* slate-50 */
-            height: 100vh;
-            width: 100vw;
-            overflow: hidden;
         }
-        /* Custom styles from original project */
         @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
         .animate-fade-in { animation: fade-in 0.5s ease-out forwards; }
     </style>
     {% block extra_css %}{% endblock %}
 </head>
 <body class="antialiased">
-    {% block content %}{% endblock %}
+    
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>
