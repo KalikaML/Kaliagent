@@ -1,3 +1,5 @@
+// procurement/static/procurement/js/procurement.js
+
 document.addEventListener('DOMContentLoaded', () => {
     const app = {
         // --- DOM Element references ---
@@ -36,7 +38,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.files.length > 0) this.fileUploadStatus.textContent = `File selected: ${e.target.files[0].name}`;
             });
             
-            // ✨ FIX: Check if the button exists before adding an event listener to prevent a crash.
             if (this.checkAllQuotesBtn) {
                 this.checkAllQuotesBtn.addEventListener('click', () => this.runCheckAllRfqs());
             }
@@ -188,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             if (response.ok) {
                 const data = await response.json();
-                alert(`Checked ${data.requests_checked} requests and found ${data.total_new_quotes} new quotes.`);
+                alert(`Checked for quotes and found ${data.total_new_quotes} new quote(s).`);
                 window.location.reload();
             } else {
                 alert('An error occurred while checking for quotes.');
@@ -205,26 +206,24 @@ document.addEventListener('DOMContentLoaded', () => {
         showQuoteDetails(quoteId) {
             const quote = this.currentRequestData.quotes.find(q => q.id == quoteId);
             if (!quote) return;
-            // Create a temporary container for the modal content
             const detailContainer = document.createElement('div');
             detailContainer.innerHTML = this.generateQuoteDetailView(quote);
             
-            // Replace the main panel content with the detail view
             const mainPanel = this.modalContentContainer.querySelector('.lg\\:col-span-2');
             if (mainPanel) {
-                mainPanel.innerHTML = ''; // Clear previous content
+                mainPanel.innerHTML = '';
                 mainPanel.appendChild(detailContainer);
 
-                // Add a back button to return to the comparison view
                 const backButton = detailContainer.querySelector('.back-to-compare-btn');
                 backButton.addEventListener('click', () => {
-                    mainPanel.innerHTML = this.generateQuotesPanel(this.currentRequestData.quotes);
+                    mainPanel.innerHTML = this.generateQuotesPanel(this.currentRequestData);
                 });
             }
         },
 
         generateModalContent(request) { const briefingPanel = `<div class="bg-slate-900 p-6 rounded-lg"><h3 class="text-xl font-bold mb-4">📝 The Briefing</h3><div class="space-y-3"><div><label class="text-sm text-slate-400">Product</label><p class="font-semibold text-lg">${request.title}</p></div><div><label class="text-sm text-slate-400">Quantity</label><p class="font-semibold text-lg">${request.quantity}</p></div><div><label class="text-sm text-slate-400">Specifications</label><p class="text-slate-300">${request.specs || 'N/A'}</p></div></div></div>`; const actionLogPanel = `<div class="bg-slate-900 p-6 rounded-lg"><h3 class="text-xl font-bold mb-4">⚡ Agent Action Log</h3><div id="action-log" class="space-y-3 text-sm h-48 overflow-y-auto pr-2"></div></div>`; let mainActionPanel; switch (request.status) { case 'agent-working': mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400 animate-pulse">Agent is working in the background...</p></div>`; break; case 'awaiting-approval': mainActionPanel = this.generateApprovalPanel(request); break; case 'quotes-received': case 'finalized': mainActionPanel = this.generateQuotesPanel(request); break; default: mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400">No actions available at this stage.</p></div>`; } return `<div class="p-4 flex justify-between items-center border-b border-slate-700"><h2 class="text-2xl font-bold">${request.title}</h2><button id="close-modal-btn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button></div><div class="p-4 grid grid-cols-1 lg:grid-cols-3 gap-4 flex-grow"><div class="lg:col-span-1 flex flex-col gap-4">${briefingPanel}${actionLogPanel}</div><div class="lg:col-span-2">${mainActionPanel}</div></div>`; },
         
+        // 🔄 MODIFIED: Updated this function to show the full RFQ draft.
         generateApprovalPanel(request) {
             const suppliers = request.suppliers || [];
             let supplierListHtml;
@@ -233,7 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (suppliers.length > 0) {
                 supplierListHtml = suppliers.map(s => {
                     let rfq_status = s.indiamart_rfq_sent ? '<span class="text-green-400">Sent</span>' : '<span class="text-amber-400">Pending</span>';
-                    return `<li class="flex items-center justify-between p-3 bg-slate-800 rounded-md"><div><p class="font-semibold">${s.name}</p><p class="text-xs text-slate-400">Official Email: ${s.email || 'Not Found'} | IndiaMART RFQ: ${rfq_status}</p></div><input type="checkbox" checked class="form-checkbox h-5 w-5 bg-slate-600 border-slate-500 rounded text-indigo-600 focus:ring-indigo-500"></li>`
+                    return `<li class="flex items-center justify-between p-3 bg-slate-800 rounded-md"><div><p class="font-semibold">${s.name}</p><p class="text-xs text-slate-400">Email: ${s.email || 'Not Found'}</p></div><input type="checkbox" checked class="form-checkbox h-5 w-5 bg-slate-600 border-slate-500 rounded text-indigo-600 focus:ring-indigo-500"></li>`
                 }).join('');
                 actionButtonHtml = `<button id="approve-rfq-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">Approve & Send Email RFQs</button>`;
             } else {
@@ -241,15 +240,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionButtonHtml = `<button id="manual-rfq-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">Manually Mark as RFQ Sent</button>`;
             }
 
-            const rfqDraftHtml = `<h4 class="font-bold text-slate-300 mb-2">Drafted RFQ Email Preview:</h4><div class="bg-slate-800 p-3 rounded-md text-sm border border-slate-700 mb-4"><p><strong>Subject:</strong> Request for Quotation (RFQ) - ${request.title}</p><p class="mt-2">Dear Supplier,...</p></div>`;
+            // Dynamically create the full RFQ message body
+            const subject = `Request for Quotation - ${request.title} [REQ-${request.id}]`;
+            const messageBody = `Dear Supplier,
+
+We are interested in procuring the following item:
+
+Product: ${request.title}
+Quantity: ${request.quantity}
+Specifications: ${request.specs || 'As per standard'}
+
+Please provide your best quotation in a reply to this email.
+
+Thank you,
+Procunova Automated System`;
+
+            // Use the dynamically created content in the preview
+            const rfqDraftHtml = `
+                <h4 class="font-bold text-slate-300 mb-2">Drafted RFQ Email Preview:</h4>
+                <div class="bg-slate-800 p-3 rounded-md text-sm border border-slate-700 mb-4">
+                    <p><strong>Subject:</strong> ${subject}</p>
+                    <div class="border-t border-slate-700 my-2"></div>
+                    <pre class="whitespace-pre-wrap font-sans text-slate-300">${messageBody}</pre>
+                </div>`;
             
             return `<div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col"><h3 class="text-xl font-bold mb-2">Vetted Supplier List</h3><ul class="space-y-2 flex-grow overflow-y-auto pr-2 mb-4">${supplierListHtml}</ul><div class="border-t border-slate-700 pt-4">${(suppliers.length > 0 ? rfqDraftHtml : '')}${actionButtonHtml}</div></div>`;
         },
 
-        // ✨ UPDATE: Quote comparison panel ko behtar banaya gaya hai
         generateQuotesPanel(request) {
             const quotes = request.quotes || [];
-            // Price ke basis par quotes ko sort karein (sabse kam sabse upar)
             quotes.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
             
             const quotesHtml = quotes.map((q, index) => {
@@ -257,13 +276,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const negotiateLink = supplier && supplier.email ? `mailto:${supplier.email}?subject=Re: Quote for ${this.currentRequestData.title} (REQ-${this.currentRequestData.id})` : '#';
                 
                 let priceClass = 'text-slate-300';
-                if (index === 0) priceClass = 'text-green-400'; // Best price
-                else if (index === 1) priceClass = 'text-amber-400'; // Second best
+                let bestQuoteBadge = '';
+                if (index === 0 && q.price) {
+                    priceClass = 'text-green-400';
+                    bestQuoteBadge = '<span class="ml-2 text-xs font-bold bg-green-500 text-white py-0.5 px-2 rounded-full">🏆 Best Quote</span>';
+                } else if (index === 1) {
+                    priceClass = 'text-amber-400';
+                }
                 
                 return `
                 <tr class="border-b border-slate-700 hover:bg-slate-800">
                     <td class="p-3 font-semibold">${q.supplier__name}</td>
-                    <td class="p-3 font-bold ${priceClass}">₹${q.price || 'N/A'}</td>
+                    <td class="p-3 font-bold ${priceClass}">₹${q.price || 'N/A'} ${bestQuoteBadge}</td>
                     <td class="p-3">${q.lead_time_days || 'N/A'} days</td>
                     <td class="p-3">${q.payment_terms || 'N/A'}</td>
                     <td class="p-3">${q.discount || 'None'}</td>
@@ -277,7 +301,7 @@ document.addEventListener('DOMContentLoaded', () => {
             
             return `<div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
                         <h3 class="text-xl font-bold mb-2">Quotation Comparison</h3>
-                        <p class="text-sm text-slate-400 mb-4">Quotes are sorted by best price. Click 'Details' to see the full email, 'Negotiate' to contact the supplier, or 'Award' to finalize.</p>
+                        <p class="text-sm text-slate-400 mb-4">Quotes are sorted by best price. The lowest price is highlighted as the <b>Best Quote</b>.</p>
                         <div class="flex-grow overflow-y-auto">
                             <table class="w-full text-left text-sm">
                                 <thead class="sticky top-0 bg-slate-900 z-10">
@@ -296,7 +320,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>`; 
         },
 
-        // ✨ UPDATE: Quote detail view ko behtar banaya gaya hai
         generateQuoteDetailView(quote) { 
             const supplier = this.currentRequestData.suppliers.find(s => s.name === quote.supplier__name); 
             const negotiateLink = supplier && supplier.email ? `mailto:${supplier.email}?subject=Re: Quote for ${this.currentRequestData.title} (REQ-${this.currentRequestData.id})` : '#'; 

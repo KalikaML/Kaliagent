@@ -4,8 +4,10 @@ from . import views
 app_name = 'procurement'
 
 urlpatterns = [
-    # Page view
+    # Page views
     path('', views.procurement_dashboard_view, name='dashboard'),
+    # ✨ NEW: URL for the analysis page
+    path('analysis/', views.analysis_view, name='analysis'),
     
     # API views for creating requests
     path('api/add-request/', views.add_request_api, name='api_add_request'),

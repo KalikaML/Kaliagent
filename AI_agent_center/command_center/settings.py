@@ -108,6 +108,8 @@ EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 DEFAULT_FROM_NAME = 'Kalika AI'
 SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')
+
+
 # In settings.py
 SEARXNG_INSTANCE_URL = 'http://localhost:8080'
 
@@ -132,3 +134,21 @@ LOGGING = {
         },
     },
 }
+# --- EMAIL SENDING (SMTP) ---
+# Used for sending RFQs to suppliers
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'
+EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your sending email address
+# IMPORTANT: Use a Gmail "App Password" if using Gmail
+EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
+
+
+# --- EMAIL READING (IMAP) ---
+# Used for reading and parsing incoming quotes
+GMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')
+GMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address
+# IMPORTANT: Use a Gmail "App Password" if using Gmail
+GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')

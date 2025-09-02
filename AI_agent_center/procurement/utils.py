@@ -1,5 +1,3 @@
-# procurement/utils.py
-
 import re
 import json
 import imaplib
@@ -11,7 +9,7 @@ from PIL import Image
 import pytesseract
 import google.generativeai as genai
 from django.conf import settings
-from .models import ProcurementRequest, Supplier, Quote
+from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
 
 # Configure the Gemini model
 try:
@@ -50,12 +48,12 @@ def get_ai_response(html_content, prompt):
         print(f"An unexpected AI error occurred: {e}")
         return None
 
-# MODIFIED: Logic updated to create separate requests for each unassigned quote's vendor.
 def process_incoming_quotes():
     """
-    Connects to the IMAP server, finds all emails with the keyword 'quotation',
-    tries to match them to a specific request. If it fails, it creates a NEW,
-    vendor-specific request for that quote.
+    Connects to the IMAP server, finds emails with 'quotation',
+    and uses AI to identify the product. If an active request for the product exists,
+    assigns the quote. Otherwise, creates a new request for that product.
+    Also, it populates the MasterVendor list.
     """
     new_quotes_found = 0
     try:
@@ -73,9 +71,6 @@ def process_incoming_quotes():
             print("No new emails with 'quotation' keyword found.")
             return 0
 
-        active_requests = ProcurementRequest.objects.exclude(status='finalized')
-        active_titles = list(active_requests.values_list('title', flat=True))
-        
         processed_uids = set(Quote.objects.values_list('parsed_from_email_uid', flat=True))
 
         for e_id in email_ids:
@@ -91,7 +86,6 @@ def process_incoming_quotes():
             
             msg = email.message_from_bytes(single_email_data[0][1])
             sender_name, sender_email = email.utils.parseaddr(msg.get("From"))
-            # Use the name part of the email if the sender name is not available
             vendor_display_name = sender_name if sender_name else sender_email.split('@')[0]
 
 
@@ -120,44 +114,43 @@ def process_incoming_quotes():
             
             if not extracted_text.strip(): continue
 
-            # AI Step 1: Identify procurement request
             proc_request = None
-            if active_titles:
-                identification_prompt = (
-                    f"From the following email text, identify which of our procurement requests this quotation is for. "
-                    f"Here is a list of our active procurement request titles: {json.dumps(active_titles)}. "
-                    f"Analyze the email content and determine the best match from the list. "
-                    f"Return ONLY a valid JSON object with a single key 'request_title' whose value is the exact matching title from the provided list. "
-                    f"If no clear match can be found, return a JSON object with the key 'request_title' and a value of null.\n\n"
-                    f"Email Text:\n---\n{extracted_text[:10000]}"
-                )
-                identified_data = get_ai_response(None, identification_prompt)
-                matched_title = identified_data.get('request_title') if identified_data else None
-
-                if matched_title and matched_title in active_titles:
-                    try:
-                        proc_request = active_requests.get(title=matched_title)
-                    except ProcurementRequest.DoesNotExist:
-                        proc_request = None
             
-            # --- NEW LOGIC START ---
-            # If no specific request is matched, create a new one for this vendor.
-            if proc_request is None:
-                request_title = f"Manual Quote - {vendor_display_name}"
+            # ✨ NEW: AI Step 1: Identify the PRODUCT from the email, not the request.
+            product_identification_prompt = (
+                f"From the following email/quotation text, identify the specific product name being quoted. "
+                f"Be very precise. For example, if the text mentions 'M12 High-Tensile Bolts', the product is 'M12 High-Tensile Bolts'. "
+                f"Return ONLY a valid JSON object with a single key 'product_name' and the identified product name as its value. "
+                f"If you cannot determine a specific product, return a value of null.\n\n"
+                f"Email Text:\n---\n{extracted_text[:10000]}"
+            )
+            identified_product_data = get_ai_response(None, product_identification_prompt)
+            product_name = identified_product_data.get('product_name') if identified_product_data else f"Unidentified Quote from {vendor_display_name}"
+
+            # Try to find an active request for this product
+            active_request_for_product = ProcurementRequest.objects.filter(
+                title__icontains=product_name,
+                status__in=['new-request', 'agent-working', 'awaiting-approval', 'rfqs-sent', 'quotes-received']
+            ).first()
+
+            if active_request_for_product:
+                proc_request = active_request_for_product
+                print(f"Matched quote to existing request: '{proc_request.title}'")
+            else:
+                # If no active request, create a new one for this product.
+                product, _ = Product.objects.get_or_create(name=product_name)
                 proc_request, created = ProcurementRequest.objects.get_or_create(
-                    title=request_title,
+                    title=product_name,
+                    status='quotes-received',
                     defaults={
-                        'quantity': 'N/A', 
-                        'specs': f'Manual quotation received from {sender_email} that was not matched to an existing request.',
-                        'source': 'Manual',
-                        'status': 'quotes-received' # Directly set status to quotes-received
+                        'product': product,
+                        'quantity': 'N/A (from email)', 
+                        'specs': f'Automatically created from a quote received from {sender_email}.',
+                        'source': 'Manual'
                     }
                 )
                 if created:
-                    print(f"Created a new dedicated request '{request_title}' for unmatched quote from {sender_email}.")
-                else:
-                    print(f"Found existing manual request '{request_title}' for quote from {sender_email}.")
-            # --- NEW LOGIC END ---
+                    print(f"Created a new product-based request '{product_name}' for quote from {sender_email}.")
 
             # AI Step 2: Extract quotation details
             parsing_prompt = (
@@ -173,10 +166,19 @@ def process_incoming_quotes():
             parsed_data = get_ai_response(None, parsing_prompt) or {}
 
             if parsed_data.get('price'):
+                # ✨ NEW: Get or create a MasterVendor and link it to the product
+                master_vendor, _ = MasterVendor.objects.get_or_create(
+                    email__iexact=sender_email,
+                    defaults={'name': vendor_display_name}
+                )
+                if proc_request.product:
+                    master_vendor.products.add(proc_request.product)
+
+                # Get or create a request-specific supplier entry
                 supplier, _ = Supplier.objects.get_or_create(
                     procurement_request=proc_request,
                     email__iexact=sender_email,
-                    defaults={'name': vendor_display_name, 'source_link': f'mailto:{sender_email}'}
+                    defaults={'name': vendor_display_name, 'master_vendor': master_vendor}
                 )
                 
                 Quote.objects.create(
