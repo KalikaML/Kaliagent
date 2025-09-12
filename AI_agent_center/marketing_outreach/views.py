@@ -2,7 +2,7 @@
 import json
 import logging
 import re
-import requests  # Ensure 'requests' is installed (pip install requests)
+import requests
 from django.conf import settings
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
@@ -49,16 +49,19 @@ def search_companies_api(request):
     """
     search_term = request.GET.get('q')
     if not search_term:
-        return JsonResponse({'companies': []})
-
-    # Construct a targeted search query
-    search_query = f'"{search_term}" company contact email site:indiamart.com OR site:tradeindia.com OR site:zaubacorp.com'
+        return JsonResponse({'error': 'Search term cannot be empty.'}, status=400)
     
+    # Check for API Key
+    if not settings.SERPAPI_API_KEY:
+        logger.error("SERPAPI_API_KEY is not configured.")
+        return JsonResponse({'error': 'The search service is not configured.'}, status=500)
+
+    search_query = f'"{search_term}" company contact email site:indiamart.com OR site:tradeindia.com OR site:zaubacorp.com'
     params = {
         "engine": "google",
         "q": search_query,
         "api_key": settings.SERPAPI_API_KEY,
-        "num": 20  # Request more results to increase chances of finding contacts
+        "num": 20
     }
 
     try:
@@ -69,7 +72,6 @@ def search_companies_api(request):
         return JsonResponse({'error': 'Failed to perform search.'}, status=500)
 
     companies = []
-    # Regex to find emails and Indian phone numbers
     email_regex = r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}'
     phone_regex = r'(?:\+91[\s-]?)?[6-9]\d{9}\b'
 
@@ -77,29 +79,24 @@ def search_companies_api(request):
         snippet = result.get('snippet', '')
         title = result.get('title', '')
         link = result.get('link')
-
-        # Combine title and snippet for a more thorough search
         text_content = (title + " " + snippet).lower()
 
-        # Extract details using regex
         email_match = re.search(email_regex, text_content)
         phone_match = re.search(phone_regex, text_content)
 
-        # Basic industry classification
         industry_keywords = {
-            'manufacturing': ['manufacturing', 'manufacturer'],
-            'plastic': ['plastic', 'polymer'],
-            'packaging': ['packaging', 'wrap'],
-            'steel': ['steel', 'metal'],
+            'manufacturing': ['manufacturing', 'manufacturer'], 'plastic': ['plastic', 'polymer'],
+            'packaging': ['packaging', 'wrap'], 'steel': ['steel', 'metal'],
         }
         found_industries = [industry.capitalize() for industry, kws in industry_keywords.items() if any(kw in text_content for kw in kws)]
         industry = ", ".join(found_industries) if found_industries else 'General Business'
 
-        # Filter out incomplete or irrelevant results
-        if '...' not in title and len(title) > 10:
+        # More robustly clean the title and filter out junk results
+        clean_title = title.split('|')[0].split('-')[0].strip()
+        if len(clean_title) > 5 and '...' not in clean_title:
              companies.append({
-                'id': i + 1,
-                'name': title.split('|')[0].strip(), # Clean up title
+                'id': i, # Use index as a simple ID
+                'name': clean_title,
                 'description': snippet,
                 'industry': industry,
                 'link': link,
@@ -107,7 +104,6 @@ def search_companies_api(request):
                 'phone': phone_match.group(0) if phone_match else 'Not Found',
             })
     
-    # Return up to the top 10 valid companies found
     return JsonResponse({'companies': companies[:10]})
 
 def generate_email_api(request):

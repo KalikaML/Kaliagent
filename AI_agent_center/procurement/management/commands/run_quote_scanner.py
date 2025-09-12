@@ -22,5 +22,5 @@ class Command(BaseCommand):
             except Exception as e:
                 self.stdout.write(self.style.ERROR(f'An error occurred in the agent loop: {e}'))
             
-            self.stdout.write('Scan complete. Waiting for 300 seconds...')
-            time.sleep(300) # Check every 5 minutes
+            self.stdout.write('Scan complete. Waiting for 30 seconds...')
+            time.sleep(30) # Check every 5 minutes

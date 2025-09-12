@@ -234,24 +234,101 @@ def finalize_request_api(request, pk):
         quote_id = data.get('quote_id')
         proc_request = ProcurementRequest.objects.get(pk=pk)
         selected_quote = Quote.objects.get(pk=quote_id)
-        
+
+        # --- Step 1: Calculate savings ---
         all_quotes_for_request = Quote.objects.filter(procurement_request=proc_request, price__isnull=False)
         average_price = all_quotes_for_request.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price
-        
+
         savings = average_price - selected_quote.price
         total_savings = savings
-        
+
         try:
             quantity_val = int(re.search(r'\d+', proc_request.quantity).group())
             total_savings = savings * quantity_val
         except (ValueError, AttributeError, TypeError):
             print(f"Could not parse quantity '{proc_request.quantity}'. Using per-unit savings.")
-            
+
+        # --- Step 2: Update request status ---
         proc_request.status = 'finalized'
         proc_request.selected_quote = selected_quote
         proc_request.estimated_savings = total_savings
         proc_request.save()
-        return JsonResponse({'success': True, 'savings': total_savings})
+
+        # --- Step 3: Generate professional confirmation email using Gemini ---
+        supplier_name = selected_quote.supplier.name if selected_quote.supplier and selected_quote.supplier.name else "Supplier"
+        product_name = proc_request.title
+        quantity = proc_request.quantity
+        price = selected_quote.price
+
+        email_prompt = f"""
+        Write a professional and polite confirmation email to a supplier named {supplier_name} 
+        informing them that their quotation for {product_name} has been selected and finalized.
+
+        Details:
+        - Product: {product_name}
+        - Quantity: {quantity}
+        - Final Price: {price}
+
+        The tone should be appreciative and professional. 
+        Do NOT add unnecessary text, keep it clear and business-oriented.
+        """
+
+        from .utils import model  # Use the Gemini model configured in utils.py
+        if model:
+            gemini_response = model.generate_content(email_prompt)
+            email_body_generated = gemini_response.text.strip()
+        else:
+            email_body_generated = (
+                f"Dear {supplier_name},\n\n"
+                f"We are pleased to inform you that your quotation for {product_name} "
+                f"has been reviewed and finalized by our procurement team.\n\n"
+                f"Quantity: {quantity}\n"
+                f"Final Price: {price}\n\n"
+                f"Thank you for your cooperation. We look forward to successful collaboration.\n"
+            )
+
+        # --- Step 4: Append Kalika Enterprises footer ---
+        footer = """
+        
+        Thanks & Regards,  
+        Vishal Kumbharkar  
+        +91 9405536016  
+        Manager System Developer  
+
+        Office Address:  
+        Plot No M-59, MIDC, Ahmednagar - 414 001 (M.S.) INDIA  
+
+        Web: www.kalikaindia.com  
+
+        Contact Emails and Departments:
+        - sales.kalikaenterprises@gmail.com (SWAPNIL ADHAV - SALES)
+        - kalikaenterprises.purchase@gmail.com (PRACHI JADHAV - PURCHASE)
+        - dispatchkalikaenterprises1667@gmail.com (NARAYAN DETHE - DISPATCH)
+        - kalikaenterprisesmktg@gmail.com (RANI KASBE - MARKETING)
+        - acckalikaenterprises@gmail.com (VAISHNAVI DHOLE - ACCOUNT)
+        """
+
+        final_email_body = email_body_generated + footer
+
+        # --- Step 5: Send the email to supplier ---
+        try:
+            send_mail(
+                subject=f"Confirmation of Finalized Quotation - {product_name}",
+                message=final_email_body,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                recipient_list=[selected_quote.supplier.email],
+                fail_silently=False,
+            )
+            print(f"✅ Confirmation email sent to {selected_quote.supplier.email}")
+        except Exception as e:
+            print(f"❌ Failed to send confirmation email: {e}")
+
+        return JsonResponse({
+            'success': True,
+            'savings': total_savings,
+            'message': f'Finalized successfully and confirmation email sent to {selected_quote.supplier.email}.'
+        })
+
     except (ProcurementRequest.DoesNotExist, Quote.DoesNotExist):
         return JsonResponse({'error': 'Request or Quote not found'}, status=404)
     except Exception as e:

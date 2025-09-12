@@ -8,7 +8,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('core.urls')),
     path('pitch/', include('ai_agent_pitch.urls')),
-    path('shorts/', include('shorts_app.urls')),
+    
     
     # --- ADD THESE TWO LINES ---
     # This tells Django to look in marketing_outreach/urls.py for any URL starting with 'marketing/'
