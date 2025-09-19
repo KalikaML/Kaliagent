@@ -19,8 +19,8 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from django.core.mail import send_mail
-from django.db.models import Sum, Avg, Count
+from django.core.mail import send_mail, EmailMessage
+from django.db.models import Sum, Avg, Count, OuterRef, Subquery
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
 from .utils import get_ai_response, process_incoming_quotes
 
@@ -40,6 +40,7 @@ def procurement_dashboard_view(request):
             market_alert = f"Gold prices: PLN {response.json()[0]['cena']}/gram."
     except requests.RequestException:
         print("Could not fetch market data.")
+
     columns_data = [
         {'id': 'new-request', 'title': '📝 New Request', 'color': 'border-sky-500'},
         {'id': 'agent-working', 'title': '🤖 Agent Working', 'color': 'border-amber-500'},
@@ -48,31 +49,75 @@ def procurement_dashboard_view(request):
         {'id': 'quotes-received', 'title': '📊 Quotes Received', 'color': 'border-green-500'},
         {'id': 'finalized', 'title': '🏆 Finalized', 'color': 'border-slate-500'}
     ]
+    
     all_requests = ProcurementRequest.objects.all().order_by('-created_at')
+    
     for column in columns_data:
-        column['requests'] = [req for req in all_requests if req.status == column['id']]
+        # 🔄 MODIFIED: Logic updated for the 'quotes-received' column to group by product.
+        if column['id'] == 'quotes-received':
+            # Get products that have requests in 'quotes-received' status
+            products_in_stage = Product.objects.filter(
+                procurementrequest__status='quotes-received'
+            ).distinct().annotate(
+                # Count all quotes across all requests for this product
+                quote_count=Count('procurementrequest__quotes')
+            )
+            column['products'] = products_in_stage
+            column['requests'] = [] # Ensure this is empty for the new logic
+        else:
+            # Original logic for all other columns
+            column['requests'] = [req for req in all_requests if req.status == column['id']]
+            column['products'] = [] # Ensure this is empty
+
     context = {
         'columns': columns_data, 'total_savings': total_savings,
         'total_time_saved': total_time_saved, 'market_alert': market_alert,
     }
     return render(request, 'procurement/dashboard.html', context)
 
-# ✨ NEW: View for the Analysis Dashboard
+# ✨ NEW: API View to get all quotes for a specific Product ID
+def get_product_quotes_api(request, product_id):
+    try:
+        product = Product.objects.get(id=product_id)
+        # Find all requests for this product that are in the 'quotes-received' stage
+        requests_for_product = ProcurementRequest.objects.filter(product=product, status='quotes-received')
+        
+        # Aggregate all quotes and related suppliers from these requests
+        quotes = Quote.objects.filter(procurement_request__in=requests_for_product).select_related('supplier', 'supplier__master_vendor')
+        
+        # We need a representative request to pass to the finalize API. We pick the first one.
+        representative_request = requests_for_product.first()
+        if not representative_request:
+             return JsonResponse({'error': 'No active requests found for this product'}, status=404)
+
+        data = {
+            'id': product.id,
+            'title': product.name, # Use product name as title
+            'representative_request_id': representative_request.id,
+            'quantity': representative_request.quantity, # Show quantity from a sample request
+            'specs': representative_request.specs, # Show specs from a sample request
+            'status': 'quotes-received', # The status is implicitly this
+            'quotes': list(quotes.values('id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 'full_email_body')),
+            'suppliers': list(Supplier.objects.filter(procurement_request__in=requests_for_product).distinct().values('name', 'email', 'phone')),
+        }
+        return JsonResponse(data)
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+
+
 def analysis_view(request):
-    # Filter logic for product
     selected_product_id = request.GET.get('product')
-    
-    # 1. Data for Historical Finalized Orders table
     finalized_requests = ProcurementRequest.objects.filter(status='finalized', selected_quote__isnull=False).select_related('selected_quote__supplier__master_vendor')
     if selected_product_id:
         finalized_requests = finalized_requests.filter(product_id=selected_product_id)
 
-    # 2. Data for Master Vendor List table
-    vendors = MasterVendor.objects.prefetch_related('products').annotate(product_count=Count('products'))
+    products_with_vendors = Product.objects.annotate(
+        vendor_count=Count('vendors')
+    ).filter(vendor_count__gt=0).prefetch_related('vendors').order_by('name')
+
     if selected_product_id:
-        vendors = vendors.filter(products__id=selected_product_id)
+        products_with_vendors = products_with_vendors.filter(id=selected_product_id)
         
-    # 3. Data for Savings Chart (product-wise savings)
     savings_data = ProcurementRequest.objects.filter(status='finalized', estimated_savings__gt=0).values('product__name').annotate(total_savings=Sum('estimated_savings')).order_by('-total_savings')
     
     chart_labels = [item['product__name'] for item in savings_data if item['product__name']]
@@ -81,7 +126,7 @@ def analysis_view(request):
     context = {
         'products': Product.objects.all().order_by('name'),
         'finalized_requests': finalized_requests,
-        'vendors': vendors,
+        'products_with_vendors': products_with_vendors,
         'selected_product_id': int(selected_product_id) if selected_product_id else None,
         'chart_labels': json.dumps(chart_labels),
         'chart_values': json.dumps(chart_values),
@@ -93,7 +138,6 @@ def analysis_view(request):
 @require_POST
 def add_request_api(request):
     data = json.loads(request.body)
-    # Get or create the product from the master list
     product, _ = Product.objects.get_or_create(name=data.get('title'))
     new_request = ProcurementRequest.objects.create(
         title=data.get('title'),
@@ -112,7 +156,6 @@ def bulk_upload_api(request):
     existing_titles = set(ProcurementRequest.objects.values_list('title', flat=True))
     new_requests = []
     try:
-        # Simplified logic for brevity, assuming CSV for this example
         decoded_file = uploaded_file.read().decode('utf-8').splitlines()
         reader = csv.DictReader(decoded_file)
         for row in reader:
@@ -173,6 +216,8 @@ def send_rfqs_api(request, pk):
         if not suppliers.exists():
             return JsonResponse({'error': 'No suppliers were found for this request.'}, status=400)
         
+        attachment = request.FILES.get('attachment')
+        
         suppliers_with_email = suppliers.filter(email__isnull=False).exclude(email__exact='')
         sent_via_email = 0
         if suppliers_with_email.exists():
@@ -187,7 +232,17 @@ def send_rfqs_api(request, pk):
             )
             for supplier in suppliers_with_email:
                 try:
-                    send_mail(subject, message_body, settings.DEFAULT_FROM_EMAIL, [supplier.email])
+                    email = EmailMessage(
+                        subject,
+                        message_body,
+                        settings.DEFAULT_FROM_EMAIL,
+                        [supplier.email]
+                    )
+                    if attachment:
+                        attachment.seek(0)
+                        email.attach(attachment.name, attachment.read(), attachment.content_type)
+                    
+                    email.send()
                     sent_via_email += 1
                 except Exception as e:
                     print(f"Could not send email to {supplier.email}. Error: {e}")
@@ -211,6 +266,8 @@ def send_rfqs_api(request, pk):
 @require_POST
 def check_and_parse_quotes_api(request, pk):
     try:
+        # This function can remain as it is, as it processes all unseen emails globally.
+        # The logic in utils.py correctly identifies the product and creates/links the quote.
         new_quotes = process_incoming_quotes()
         return JsonResponse({'success': True, 'message': f'Global scan complete. Found {new_quotes} new quotes.', 'new_quotes_found': new_quotes})
     except Exception as e:
@@ -232,12 +289,17 @@ def finalize_request_api(request, pk):
     try:
         data = json.loads(request.body)
         quote_id = data.get('quote_id')
+        
+        # The 'pk' here is the representative request ID
         proc_request = ProcurementRequest.objects.get(pk=pk)
         selected_quote = Quote.objects.get(pk=quote_id)
 
-        # --- Step 1: Calculate savings ---
-        all_quotes_for_request = Quote.objects.filter(procurement_request=proc_request, price__isnull=False)
-        average_price = all_quotes_for_request.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price
+        # Get all quotes for the same PRODUCT, not just the single request
+        all_quotes_for_product = Quote.objects.filter(
+            procurement_request__product=proc_request.product,
+            price__isnull=False
+        )
+        average_price = all_quotes_for_product.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price
 
         savings = average_price - selected_quote.price
         total_savings = savings
@@ -248,13 +310,20 @@ def finalize_request_api(request, pk):
         except (ValueError, AttributeError, TypeError):
             print(f"Could not parse quantity '{proc_request.quantity}'. Using per-unit savings.")
 
-        # --- Step 2: Update request status ---
+        # Update the representative request
         proc_request.status = 'finalized'
         proc_request.selected_quote = selected_quote
         proc_request.estimated_savings = total_savings
         proc_request.save()
 
-        # --- Step 3: Generate professional confirmation email using Gemini ---
+        # 🔄 MODIFIED: Update all other open requests for the same product to 'finalized' as well.
+        # This cleans up the Kanban board.
+        ProcurementRequest.objects.filter(
+            product=proc_request.product, 
+            status='quotes-received'
+        ).exclude(id=proc_request.id).update(status='finalized')
+
+
         supplier_name = selected_quote.supplier.name if selected_quote.supplier and selected_quote.supplier.name else "Supplier"
         product_name = proc_request.title
         quantity = proc_request.quantity
@@ -273,7 +342,7 @@ def finalize_request_api(request, pk):
         Do NOT add unnecessary text, keep it clear and business-oriented.
         """
 
-        from .utils import model  # Use the Gemini model configured in utils.py
+        from .utils import model
         if model:
             gemini_response = model.generate_content(email_prompt)
             email_body_generated = gemini_response.text.strip()
@@ -287,7 +356,6 @@ def finalize_request_api(request, pk):
                 f"Thank you for your cooperation. We look forward to successful collaboration.\n"
             )
 
-        # --- Step 4: Append Kalika Enterprises footer ---
         footer = """
         
         Thanks & Regards,  
@@ -310,7 +378,6 @@ def finalize_request_api(request, pk):
 
         final_email_body = email_body_generated + footer
 
-        # --- Step 5: Send the email to supplier ---
         try:
             send_mail(
                 subject=f"Confirmation of Finalized Quotation - {product_name}",

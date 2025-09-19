@@ -71,16 +71,34 @@
             <h2 class="kanban-column-title">
                 {{ column.title }}
                 <span class="ml-auto text-sm font-normal bg-slate-700 text-slate-300 rounded-full px-2 py-0.5" id="count-{{ column.id }}">
-                    {{ column.requests|length }}
+                    {% if column.id == 'quotes-received' %}{{ column.products|length }}{% else %}{{ column.requests|length }}{% endif %}
                 </span>
             </h2>
             <div class="kanban-cards" id="cards-{{ column.id }}">
-                {% for request in column.requests %}
-                <div class="kanban-card {{ column.color }}" data-request-id="{{ request.id }}">
-                    <h3 class="font-bold">{{ request.title }}</h3>
-                    <p class="text-sm text-slate-400 mt-1">{{ request.quantity }}</p>
-                </div>
-                {% endfor %}
+                
+                {% if column.id == 'quotes-received' %}
+                    {% for product in column.products %}
+                    <div class="kanban-card {{ column.color }}" data-product-id="{{ product.id }}">
+                        <h3 class="font-bold">{{ product.name }}</h3>
+                        <p class="text-sm text-slate-400 mt-1">{{ product.quote_count }} quote(s) received</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    {% for request in column.requests %}
+                    <div class="kanban-card {{ column.color }}" data-request-id="{{ request.id }}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-grow">
+                                <h3 class="font-bold pr-4">{{ request.title }}</h3>
+                                <p class="text-sm text-slate-400 mt-1">{{ request.quantity }}</p>
+                            </div>
+                            <button class="delete-request-btn flex-shrink-0 text-slate-500 hover:text-red-500 transition-colors" title="Delete Request" data-request-id="{{ request.id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
             </div>
         </div>
         {% endfor %}

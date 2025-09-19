@@ -9,9 +9,20 @@ import fitz  # PyMuPDF
 import io
 from PIL import Image
 import pytesseract
+import csv # <-- Added for CSV parsing
 import google.generativeai as genai
 from django.conf import settings
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
+
+# Try to import Excel libraries
+try:
+    import openpyxl # For .xlsx
+    import xlrd # For .xls
+    EXCEL_LIBS_INSTALLED = True
+except ImportError:
+    EXCEL_LIBS_INSTALLED = False
+    print("WARNING: 'openpyxl' and 'xlrd' are not installed. Excel file parsing will be skipped.")
+
 
 # Configure the Gemini model
 try:
@@ -58,6 +69,7 @@ def process_incoming_quotes():
     - Fetch only recent unseen emails
     - Sort by newest first
     - Optionally limit to a certain number of latest emails
+    - Parse text from PDF, Image, Excel, CSV, and TXT attachments
     """
     new_quotes_found = 0
     
@@ -87,7 +99,7 @@ def process_incoming_quotes():
         # --- STEP 3: Sort emails so latest come first ---
         email_ids.sort(reverse=True)  # Higher UID = Newer email
 
-        # --- STEP 4: Limit to the most recent 5 unseen emails (Optional) ---
+        # --- STEP 4: Limit to the most recent 10 unseen emails (Optional) ---
         MAX_EMAILS = 10
         email_ids = email_ids[:MAX_EMAILS]
 
@@ -130,7 +142,7 @@ def process_incoming_quotes():
             else:
                 extracted_text += msg.get_payload(decode=True).decode(errors='ignore') + "\n\n"
 
-            # Extract text from attachments (PDF or images)
+            # === UPDATED SECTION: Extract text from various attachments ===
             for part in msg.walk():
                 if part.get_content_maintype() == 'multipart' or part.get('Content-Disposition') is None:
                     continue
@@ -138,13 +150,52 @@ def process_incoming_quotes():
                 if filename:
                     try:
                         attachment_bytes = part.get_payload(decode=True)
+                        extracted_text += f"\n--- ATTACHMENT: {filename} ---\n"
+                        
+                        # PDF Parsing (Existing)
                         if filename.lower().endswith('.pdf'):
                             with fitz.open(stream=io.BytesIO(attachment_bytes), filetype="pdf") as doc:
                                 for page in doc:
-                                    extracted_text += page.get_text() + "\n\n"
+                                    extracted_text += page.get_text() + "\n"
+                        
+                        # Image OCR (Existing)
                         elif filename.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff')):
                             image = Image.open(io.BytesIO(attachment_bytes))
-                            extracted_text += pytesseract.image_to_string(image) + "\n\n"
+                            extracted_text += pytesseract.image_to_string(image) + "\n"
+                        
+                        # --- NEW: XLSX Parsing ---
+                        elif filename.lower().endswith('.xlsx') and EXCEL_LIBS_INSTALLED:
+                            workbook = openpyxl.load_workbook(io.BytesIO(attachment_bytes))
+                            for sheet_name in workbook.sheetnames:
+                                sheet = workbook[sheet_name]
+                                for row in sheet.iter_rows():
+                                    row_text = [str(cell.value) for cell in row if cell.value is not None]
+                                    if row_text:
+                                        extracted_text += ", ".join(row_text) + "\n"
+                        
+                        # --- NEW: XLS Parsing ---
+                        elif filename.lower().endswith('.xls') and EXCEL_LIBS_INSTALLED:
+                            workbook = xlrd.open_workbook(file_contents=attachment_bytes)
+                            for sheet in workbook.sheets():
+                                for row_idx in range(sheet.nrows):
+                                    row_text = [str(cell.value) for cell in sheet.row(row_idx) if cell.value is not None]
+                                    if row_text:
+                                        extracted_text += ", ".join(row_text) + "\n"
+                        
+                        # --- NEW: CSV Parsing ---
+                        elif filename.lower().endswith('.csv'):
+                            decoded_content = attachment_bytes.decode('utf-8', errors='ignore')
+                            csv_file = io.StringIO(decoded_content)
+                            reader = csv.reader(csv_file)
+                            for row in reader:
+                                extracted_text += ", ".join(row) + "\n"
+
+                        # --- NEW: TXT Parsing ---
+                        elif filename.lower().endswith('.txt'):
+                            extracted_text += attachment_bytes.decode('utf-8', errors='ignore') + "\n"
+
+                        extracted_text += f"--- END ATTACHMENT: {filename} ---\n\n"
+
                     except Exception as e:
                         print(f"Failed to parse attachment {filename}: {e}")
 

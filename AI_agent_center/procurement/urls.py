@@ -6,7 +6,6 @@ app_name = 'procurement'
 urlpatterns = [
     # Page views
     path('', views.procurement_dashboard_view, name='dashboard'),
-    # ✨ NEW: URL for the analysis page
     path('analysis/', views.analysis_view, name='analysis'),
     
     # API views for creating requests
@@ -15,6 +14,8 @@ urlpatterns = [
     
     # Main request details and action endpoints
     path('api/get-request-details/<int:pk>/', views.get_request_details_api, name='api_get_request_details'),
+    # ✨ NEW: URL for the product-centric quote view API
+    path('api/get-product-quotes/<int:product_id>/', views.get_product_quotes_api, name='api_get_product_quotes'),
     path('api/delete-request/<int:pk>/', views.delete_request_api, name='api_delete_request'),
 
     # Agent stage APIs
