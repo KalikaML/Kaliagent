@@ -1,0 +1,49 @@
+Django
+# For loading environment variables from .env file
+python-dotenv~=1.0
+
+# For Google Search via SerpApi
+google-search-results~=2.4
+
+# For making HTTP requests to the Gemini API
+requests~=2.32  
+
+playwright
+bs4
+google-generativeai
+
+sendgrid
+# For downloading and processing YouTube videos
+yt-dlp
+moviepy==1.0.3
+google-generativeai
+webvtt-py
+google-api-python-client
+google-auth-oauthlib
+webvtt-py
+
+pytesseract==0.3.13
+Pillow
+fitz  # It's PyMuPDF
+PyMuPDF==1.26.3
+#imaplib  # stdlib, do not add
+#email  # stdlib, do not add
+requests
+playwright==1.49.1
+google-generativeai==0.8.5
+google-genai==1.10.0
+bs4  # This is 'beautifulsoup4'
+beautifulsoup4==4.12.2
+serpapi  # Provided by 'google_search_results'
+pytz==2023.3.post1
+pdfplumber==0.11.5  # Just in case, for PDF
+pdfminer.six==20231228  # Just in case, for PDF
+dotenv
+google-search-results
+frontend
+tools
+tesseract
+httpx
+psycopg2
+openpyxl 
+xlrd

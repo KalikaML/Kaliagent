@@ -1,0 +1,282 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Procurement Analysis{% endblock %}
+
+{% block extra_css %}
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+<style>
+    /* Custom styles for Select2 */
+    .select2-container--default .select2-selection--single {
+        background-color: #334155; /* slate-700 */
+        border: 1px solid #475569; /* slate-600 */
+        border-radius: 0.5rem;
+        height: 42px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__rendered {
+        color: #e2e8f0; /* slate-200 */
+        line-height: 40px;
+        padding-left: 12px;
+    }
+    .select2-container--default .select2-selection--single .select2-selection__arrow {
+        height: 40px;
+    }
+    .select2-dropdown {
+        background-color: #1e293b; /* slate-800 */
+        border: 1px solid #475569; /* slate-600 */
+    }
+    .select2-container--default .select2-search--dropdown .select2-search__field {
+        background-color: #334155; /* slate-700 */
+        border: 1px solid #475569; /* slate-600 */
+        color: #e2e8f0; /* slate-200 */
+    }
+    .select2-container--default .select2-results__option--highlighted.select2-results__option--selectable {
+        background-color: #4f46e5; /* indigo-600 */
+    }
+
+    /* Styles for the modal popup */
+    .modal-backdrop { 
+        position: fixed; 
+        top: 0; left: 0; right: 0; bottom: 0; 
+        background-color: rgba(15, 23, 42, 0.8); 
+        backdrop-filter: blur(4px); 
+        display: flex; 
+        align-items: center; 
+        justify-content: center; 
+        z-index: 50; 
+    }
+    .modal-content { 
+        background-color: #1e293b; /* slate-800 */
+        border-radius: 0.75rem; 
+        width: 90%;
+        display: flex;
+        flex-direction: column;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'procurement:dashboard' %}" class="absolute top-4 left-4 z-50 flex items-center gap-2 bg-slate-700/50 hover:bg-slate-600/80 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    Back to Dashboard
+</a>
+
+<div class="p-4 md:p-8">
+    <header class="mb-6">
+        <h1 class="text-3xl font-black text-white">Analysis Dashboard</h1>
+        <p class="text-slate-400">Insights into your procurement activities.</p>
+    </header>
+
+    <div class="mb-6 bg-slate-800 p-4 rounded-lg">
+        <form method="get" action="">
+            <label for="product-filter" class="block text-slate-300 mb-2 font-bold">Filter by Product:</label>
+            <div class="flex gap-4">
+                <select name="product" id="product-filter" class="w-full">
+                    <option value="">All Products</option>
+                    {% for product in products %}
+                        <option value="{{ product.id }}" {% if product.id == selected_product_id %}selected{% endif %}>{{ product.name }}</option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Filter</button>
+                <a href="{% url 'procurement:analysis' %}" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Clear</a>
+            </div>
+        </form>
+    </div>
+    
+    <div class="mb-8 bg-slate-800 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-white mb-4">Total Savings per Product</h2>
+        <canvas id="savingsChart"></canvas>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="bg-slate-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold text-white mb-4">Historical Finalized Orders</h2>
+            <div class="overflow-y-auto h-96">
+                <table class="w-full text-left text-sm">
+                    <thead>
+                        <tr class="border-b border-slate-600">
+                            <th class="p-3">Product</th>
+                            <th class="p-3">Finalized Vendor</th>
+                            <th class="p-3">Final Price</th>
+                            <th class="p-3">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in finalized_requests %}
+                        <tr class="border-b border-slate-700 hover:bg-slate-700">
+                            <td class="p-3 font-semibold">{{ req.title }}</td>
+                            <td class="p-3">{{ req.selected_quote.supplier.master_vendor.name }}</td>
+                            <td class="p-3 text-green-400 font-bold">₹{{ req.selected_quote.price|floatformat:2 }}</td>
+                            <td class="p-3 text-slate-400">{{ req.created_at|date:"d M Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4" class="text-center p-4 text-slate-400">No finalized orders found for this filter.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="bg-slate-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold text-white mb-4">Vendor List by Product</h2>
+            <div class="space-y-2 h-96 overflow-y-auto pr-2" id="product-list-container">
+                {% for product in products_with_vendors %}
+                <a href="#" class="product-item block p-4 bg-slate-900 rounded-lg hover:bg-slate-700 transition-colors flex justify-between items-center"
+                   data-product-name="{{ product.name|escapejs }}"
+                   data-vendors='[{% for vendor in product.vendors.all %}{"name": "{{ vendor.name|escapejs }}", "email": "{{ vendor.email|default_if_none:""|escapejs }}"}{% if not forloop.last %},{% endif %}{% endfor %}]'>
+                    <span class="font-bold">{{ product.name }}</span>
+                    <span class="text-xs bg-slate-600 text-slate-300 rounded-full px-2 py-1">{{ product.vendor_count }} Vendor(s)</span>
+                </a>
+                {% empty %}
+                <p class="text-slate-400 text-center p-4">No products with linked vendors found.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="vendor-modal" class="modal-backdrop hidden">
+    <div class="modal-content max-w-4xl" style="height: 70vh;">
+        <div class="p-4 flex justify-between items-center border-b border-slate-700 flex-shrink-0">
+            <h2 id="modal-title" class="text-2xl font-bold">Vendors</h2>
+            <div class="flex items-center gap-x-4">
+                <button id="bulk-rerequest-btn" class="text-sm bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 px-4 rounded-lg disabled:bg-slate-500 disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    Re-Request from Selected
+                </button>
+                <button id="close-modal-btn" class="text-slate-400 hover:text-white text-3xl leading-none">&times;</button>
+            </div>
+        </div>
+        <div class="p-4 flex-shrink-0">
+            <input type="text" id="vendor-search-input" placeholder="Search vendors by name..." class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+        </div>
+        <div id="modal-vendor-list" class="flex-grow overflow-y-auto px-4 pb-4">
+            </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script>
+    // Initialize the savings chart
+    const ctx = document.getElementById('savingsChart').getContext('2d');
+    const savingsChart = new Chart(ctx, {
+        type: 'bar',
+        data: { /* ... chart data ... */ },
+        options: { /* ... chart options ... */ }
+    });
+
+    $(document).ready(function() {
+        $('#product-filter').select2();
+
+        // === MODAL AND SEARCH LOGIC (UPDATED WITH CHECKBOXES) ===
+        const vendorModal = $('#vendor-modal');
+        const modalTitle = $('#modal-title');
+        const modalVendorList = $('#modal-vendor-list');
+        const searchInput = $('#vendor-search-input');
+        const bulkRequestBtn = $('#bulk-rerequest-btn');
+
+        // --- 1. Open Modal on Product Click ---
+        $('#product-list-container').on('click', '.product-item', function(e) {
+            e.preventDefault();
+            const productName = $(this).data('product-name');
+            const vendors = $(this).data('vendors');
+
+            modalTitle.text('Vendors for ' + productName);
+
+            let tableHtml = `
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-800 z-10">
+                        <tr class="border-b border-slate-600">
+                            <th class="p-2 w-10"><input type="checkbox" id="select-all-vendors" class="h-4 w-4 bg-slate-600 border-slate-500 rounded text-indigo-500 focus:ring-indigo-500"></th>
+                            <th class="p-2">Vendor Name</th>
+                            <th class="p-2">Email</th>
+                            <th class="p-2">Individual Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>`;
+
+            if (vendors && vendors.length > 0) {
+                vendors.forEach(vendor => {
+                    const mailto = vendor.email ? `mailto:${vendor.email}?subject=Request for Quotation for ${productName}` : '#';
+                    tableHtml += `
+                        <tr class="border-b border-slate-700 last:border-b-0 hover:bg-slate-700">
+                            <td class="p-2"><input type="checkbox" class="vendor-checkbox h-4 w-4 bg-slate-600 border-slate-500 rounded text-indigo-500 focus:ring-indigo-500" data-email="${vendor.email || ''}"></td>
+                            <td class="p-2 font-semibold">${vendor.name}</td>
+                            <td class="p-2 text-slate-400">${vendor.email || 'N/A'}</td>
+                            <td class="p-2">
+                                <a href="${mailto}" class="text-sm bg-sky-600 hover:bg-sky-500 text-white px-3 py-1 rounded">Re-Request</a>
+                            </td>
+                        </tr>`;
+                });
+            } else {
+                tableHtml += `<tr><td colspan="4" class="text-center p-4 text-slate-400">No vendors found for this product.</td></tr>`;
+            }
+            tableHtml += `</tbody></table>`;
+
+            modalVendorList.html(tableHtml);
+            searchInput.val('');
+            bulkRequestBtn.prop('disabled', true); // Disable button on open
+            vendorModal.removeClass('hidden');
+        });
+
+        // --- 2. Close Modal ---
+        $('#close-modal-btn, #vendor-modal').on('click', function(e) {
+            if (e.target.id === 'vendor-modal' || e.target.id === 'close-modal-btn' || $(e.target).closest('#close-modal-btn').length) {
+                vendorModal.addClass('hidden');
+            }
+        });
+        $('.modal-content').on('click', function(e) { e.stopPropagation(); });
+
+        // --- 3. Search/Filter Logic ---
+        searchInput.on('keyup', function() {
+            const searchTerm = $(this).val().toLowerCase();
+            modalVendorList.find('tbody tr').each(function() {
+                const vendorName = $(this).find('td:nth-child(2)').text().toLowerCase();
+                if (vendorName.includes(searchTerm)) { $(this).show(); } else { $(this).hide(); }
+            });
+        });
+
+        // --- 4. Checkbox Logic ---
+        function updateBulkRequestState() {
+            const allCheckboxes = modalVendorList.find('.vendor-checkbox');
+            const checkedCheckboxes = allCheckboxes.filter(':checked');
+            
+            bulkRequestBtn.prop('disabled', checkedCheckboxes.length === 0);
+            
+            $('#select-all-vendors').prop('checked', allCheckboxes.length > 0 && checkedCheckboxes.length === allCheckboxes.length);
+        }
+
+        modalVendorList.on('change', '#select-all-vendors', function() {
+            modalVendorList.find('.vendor-checkbox').prop('checked', $(this).prop('checked'));
+            updateBulkRequestState();
+        });
+
+        modalVendorList.on('change', '.vendor-checkbox', function() {
+            updateBulkRequestState();
+        });
+
+        // --- 5. Bulk Re-Request Button Action ---
+        bulkRequestBtn.on('click', function() {
+            const checkedEmails = [];
+            modalVendorList.find('.vendor-checkbox:checked').each(function() {
+                const email = $(this).data('email');
+                if (email) { checkedEmails.push(email); }
+            });
+
+            if (checkedEmails.length > 0) {
+                const productName = modalTitle.text().replace('Vendors for ', '');
+                const subject = `Request for Quotation for ${productName}`;
+                const bcc = checkedEmails.join(',');
+                // Use BCC to hide recipients from each other
+                window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&bcc=${encodeURIComponent(bcc)}`;
+            } else {
+                alert('Please select at least one vendor.');
+            }
+        });
+    });
+</script>
+{% endblock %}
