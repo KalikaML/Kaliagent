@@ -20,7 +20,7 @@ from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.mail import send_mail, EmailMessage
-from django.db.models import Sum, Avg, Count, OuterRef, Subquery, Q
+from django.db.models import Sum, Avg, Count, OuterRef, Subquery
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
 from .utils import get_ai_response, process_incoming_quotes
 
@@ -53,23 +53,21 @@ def procurement_dashboard_view(request):
     all_requests = ProcurementRequest.objects.all().order_by('-created_at')
     
     for column in columns_data:
+        # 🔄 MODIFIED: Logic updated for the 'quotes-received' column to group by product.
         if column['id'] == 'quotes-received':
-            # 🔽 MODIFIED: This entire block is replaced with the corrected query.
-            # This robust query first annotates products with a conditional count of quotes
-            # (only counting quotes from requests in the 'quotes-received' stage)
-            # and then filters to only show products with one or more such quotes.
-            products_in_stage = Product.objects.annotate(
-                quote_count=Count(
-                    'procurementrequest__quotes',
-                    filter=Q(procurementrequest__status='quotes-received')
-                )
-            ).filter(quote_count__gt=0)
-            
+            # Get products that have requests in 'quotes-received' status
+            products_in_stage = Product.objects.filter(
+                procurementrequest__status='quotes-received'
+            ).distinct().annotate(
+                # Count all quotes across all requests for this product
+                quote_count=Count('procurementrequest__quotes')
+            )
             column['products'] = products_in_stage
-            column['requests'] = []
+            column['requests'] = [] # Ensure this is empty for the new logic
         else:
+            # Original logic for all other columns
             column['requests'] = [req for req in all_requests if req.status == column['id']]
-            column['products'] = []
+            column['products'] = [] # Ensure this is empty
 
     context = {
         'columns': columns_data, 'total_savings': total_savings,
@@ -348,10 +346,6 @@ def finalize_request_api(request, pk):
         if model:
             gemini_response = model.generate_content(email_prompt)
             email_body_generated = gemini_response.text.strip()
-            
-            # 🔽 ADD THIS LINE TO REPLACE THE PLACEHOLDER
-            email_body_generated = email_body_generated.replace('[Your Name/Company Name]', 'Vishal Kumbharkar\nKalika Enterprises')
-
         else:
             email_body_generated = (
                 f"Dear {supplier_name},\n\n"
@@ -365,7 +359,7 @@ def finalize_request_api(request, pk):
         footer = """
         
         Thanks & Regards,  
-        Vishal Kumbharkar    
+        Vishal Kumbharkar  
         +91 9405536016  
         Manager System Developer  
 
