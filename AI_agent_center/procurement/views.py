@@ -393,6 +393,10 @@ def finalize_request_api(request, pk):
         if model:
             gemini_response = model.generate_content(email_prompt)
             email_body_generated = gemini_response.text.strip()
+            
+            # 🔽 ADD THIS LINE TO REPLACE THE PLACEHOLDER
+            email_body_generated = email_body_generated.replace('[Your Name/Company Name]', 'Vishal Kumbharkar\nKalika Enterprises')
+
         else:
             email_body_generated = (
                 f"Dear {supplier_name},\n\n"
@@ -406,7 +410,7 @@ def finalize_request_api(request, pk):
         footer = """
         
         Thanks & Regards,  
-        Vishal Kumbharkar  
+        Vishal Kumbharkar 
         +91 9405536016  
         Manager System Developer  
 
