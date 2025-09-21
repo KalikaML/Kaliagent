@@ -41,99 +41,28 @@
         "documentation": {}
     },
     {
-        "label": "admin",
-        "importPath": "django.contrib",
-        "description": "django.contrib",
+        "label": "django.db.models.deletion",
+        "kind": 6,
         "isExtraImport": true,
-        "detail": "django.contrib",
+        "importPath": "django.db.models.deletion",
+        "description": "django.db.models.deletion",
+        "detail": "django.db.models.deletion",
         "documentation": {}
     },
     {
-        "label": "messages",
-        "importPath": "django.contrib",
-        "description": "django.contrib",
+        "label": "migrations",
+        "importPath": "django.db",
+        "description": "django.db",
         "isExtraImport": true,
-        "detail": "django.contrib",
+        "detail": "django.db",
         "documentation": {}
     },
     {
-        "label": "admin",
-        "importPath": "django.contrib",
-        "description": "django.contrib",
+        "label": "models",
+        "importPath": "django.db",
+        "description": "django.db",
         "isExtraImport": true,
-        "detail": "django.contrib",
-        "documentation": {}
-    },
-    {
-        "label": "admin",
-        "importPath": "django.contrib",
-        "description": "django.contrib",
-        "isExtraImport": true,
-        "detail": "django.contrib",
-        "documentation": {}
-    },
-    {
-        "label": "admin",
-        "importPath": "django.contrib",
-        "description": "django.contrib",
-        "isExtraImport": true,
-        "detail": "django.contrib",
-        "documentation": {}
-    },
-    {
-        "label": "admin",
-        "importPath": "django.contrib",
-        "description": "django.contrib",
-        "isExtraImport": true,
-        "detail": "django.contrib",
-        "documentation": {}
-    },
-    {
-        "label": "admin",
-        "importPath": "django.contrib",
-        "description": "django.contrib",
-        "isExtraImport": true,
-        "detail": "django.contrib",
-        "documentation": {}
-    },
-    {
-        "label": "AppConfig",
-        "importPath": "django.apps",
-        "description": "django.apps",
-        "isExtraImport": true,
-        "detail": "django.apps",
-        "documentation": {}
-    },
-    {
-        "label": "AppConfig",
-        "importPath": "django.apps",
-        "description": "django.apps",
-        "isExtraImport": true,
-        "detail": "django.apps",
-        "documentation": {}
-    },
-    {
-        "label": "AppConfig",
-        "importPath": "django.apps",
-        "description": "django.apps",
-        "isExtraImport": true,
-        "detail": "django.apps",
-        "documentation": {}
-    },
-    {
-        "label": "AppConfig",
-        "importPath": "django.apps",
-        "description": "django.apps",
-        "isExtraImport": true,
-        "detail": "django.apps",
-        "documentation": {}
-    },
-    {
-        "label": "AppConfig",
-        "importPath": "django.apps",
-        "description": "django.apps",
-        "isExtraImport": true,
-        "detail": "django.apps",
+        "detail": "django.db",
         "documentation": {}
     },
     {
@@ -185,11 +114,91 @@
         "documentation": {}
     },
     {
-        "label": "models",
-        "importPath": "django.db",
-        "description": "django.db",
+        "label": "admin",
+        "importPath": "django.contrib",
+        "description": "django.contrib",
         "isExtraImport": true,
-        "detail": "django.db",
+        "detail": "django.contrib",
+        "documentation": {}
+    },
+    {
+        "label": "messages",
+        "importPath": "django.contrib",
+        "description": "django.contrib",
+        "isExtraImport": true,
+        "detail": "django.contrib",
+        "documentation": {}
+    },
+    {
+        "label": "admin",
+        "importPath": "django.contrib",
+        "description": "django.contrib",
+        "isExtraImport": true,
+        "detail": "django.contrib",
+        "documentation": {}
+    },
+    {
+        "label": "admin",
+        "importPath": "django.contrib",
+        "description": "django.contrib",
+        "isExtraImport": true,
+        "detail": "django.contrib",
+        "documentation": {}
+    },
+    {
+        "label": "messages",
+        "importPath": "django.contrib",
+        "description": "django.contrib",
+        "isExtraImport": true,
+        "detail": "django.contrib",
+        "documentation": {}
+    },
+    {
+        "label": "admin",
+        "importPath": "django.contrib",
+        "description": "django.contrib",
+        "isExtraImport": true,
+        "detail": "django.contrib",
+        "documentation": {}
+    },
+    {
+        "label": "admin",
+        "importPath": "django.contrib",
+        "description": "django.contrib",
+        "isExtraImport": true,
+        "detail": "django.contrib",
+        "documentation": {}
+    },
+    {
+        "label": "AppConfig",
+        "importPath": "django.apps",
+        "description": "django.apps",
+        "isExtraImport": true,
+        "detail": "django.apps",
+        "documentation": {}
+    },
+    {
+        "label": "AppConfig",
+        "importPath": "django.apps",
+        "description": "django.apps",
+        "isExtraImport": true,
+        "detail": "django.apps",
+        "documentation": {}
+    },
+    {
+        "label": "AppConfig",
+        "importPath": "django.apps",
+        "description": "django.apps",
+        "isExtraImport": true,
+        "detail": "django.apps",
+        "documentation": {}
+    },
+    {
+        "label": "AppConfig",
+        "importPath": "django.apps",
+        "description": "django.apps",
+        "isExtraImport": true,
+        "detail": "django.apps",
         "documentation": {}
     },
     {
@@ -206,14 +215,6 @@
         "description": "django.utils",
         "isExtraImport": true,
         "detail": "django.utils",
-        "documentation": {}
-    },
-    {
-        "label": "TestCase",
-        "importPath": "django.test",
-        "description": "django.test",
-        "isExtraImport": true,
-        "detail": "django.test",
         "documentation": {}
     },
     {
@@ -281,7 +282,7 @@
         "documentation": {}
     },
     {
-        "label": "path",
+        "label": "reverse_lazy",
         "importPath": "django.urls",
         "description": "django.urls",
         "isExtraImport": true,
@@ -382,6 +383,14 @@
         "documentation": {}
     },
     {
+        "label": "redirect",
+        "importPath": "django.shortcuts",
+        "description": "django.shortcuts",
+        "isExtraImport": true,
+        "detail": "django.shortcuts",
+        "documentation": {}
+    },
+    {
         "label": "render",
         "importPath": "django.shortcuts",
         "description": "django.shortcuts",
@@ -403,30 +412,6 @@
         "description": "django.shortcuts",
         "isExtraImport": true,
         "detail": "django.shortcuts",
-        "documentation": {}
-    },
-    {
-        "label": "render",
-        "importPath": "django.shortcuts",
-        "description": "django.shortcuts",
-        "isExtraImport": true,
-        "detail": "django.shortcuts",
-        "documentation": {}
-    },
-    {
-        "label": "get_object_or_404",
-        "importPath": "django.shortcuts",
-        "description": "django.shortcuts",
-        "isExtraImport": true,
-        "detail": "django.shortcuts",
-        "documentation": {}
-    },
-    {
-        "label": "settings",
-        "importPath": "django.conf",
-        "description": "django.conf",
-        "isExtraImport": true,
-        "detail": "django.conf",
         "documentation": {}
     },
     {
@@ -503,30 +488,6 @@
     },
     {
         "label": "JsonResponse",
-        "importPath": "django.http",
-        "description": "django.http",
-        "isExtraImport": true,
-        "detail": "django.http",
-        "documentation": {}
-    },
-    {
-        "label": "JsonResponse",
-        "importPath": "django.http",
-        "description": "django.http",
-        "isExtraImport": true,
-        "detail": "django.http",
-        "documentation": {}
-    },
-    {
-        "label": "FileResponse",
-        "importPath": "django.http",
-        "description": "django.http",
-        "isExtraImport": true,
-        "detail": "django.http",
-        "documentation": {}
-    },
-    {
-        "label": "Http404",
         "importPath": "django.http",
         "description": "django.http",
         "isExtraImport": true,
@@ -679,6 +640,94 @@
         "documentation": {}
     },
     {
+        "label": "forms",
+        "importPath": "django",
+        "description": "django",
+        "isExtraImport": true,
+        "detail": "django",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "django.contrib.auth.models",
+        "description": "django.contrib.auth.models",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth.models",
+        "documentation": {}
+    },
+    {
+        "label": "User",
+        "importPath": "django.contrib.auth.models",
+        "description": "django.contrib.auth.models",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth.models",
+        "documentation": {}
+    },
+    {
+        "label": "UserCreationForm",
+        "importPath": "django.contrib.auth.forms",
+        "description": "django.contrib.auth.forms",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth.forms",
+        "documentation": {}
+    },
+    {
+        "label": "AuthenticationForm",
+        "importPath": "django.contrib.auth.forms",
+        "description": "django.contrib.auth.forms",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth.forms",
+        "documentation": {}
+    },
+    {
+        "label": "views",
+        "importPath": "django.contrib.auth",
+        "description": "django.contrib.auth",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth",
+        "documentation": {}
+    },
+    {
+        "label": "authenticate",
+        "importPath": "django.contrib.auth",
+        "description": "django.contrib.auth",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth",
+        "documentation": {}
+    },
+    {
+        "label": "login",
+        "importPath": "django.contrib.auth",
+        "description": "django.contrib.auth",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth",
+        "documentation": {}
+    },
+    {
+        "label": "logout",
+        "importPath": "django.contrib.auth",
+        "description": "django.contrib.auth",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth",
+        "documentation": {}
+    },
+    {
+        "label": "login_required",
+        "importPath": "django.contrib.auth.decorators",
+        "description": "django.contrib.auth.decorators",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth.decorators",
+        "documentation": {}
+    },
+    {
+        "label": "user_passes_test",
+        "importPath": "django.contrib.auth.decorators",
+        "description": "django.contrib.auth.decorators",
+        "isExtraImport": true,
+        "detail": "django.contrib.auth.decorators",
+        "documentation": {}
+    },
+    {
         "label": "re",
         "kind": 6,
         "isExtraImport": true,
@@ -763,30 +812,6 @@
         "documentation": {}
     },
     {
-        "label": "urlparse",
-        "importPath": "urllib.parse",
-        "description": "urllib.parse",
-        "isExtraImport": true,
-        "detail": "urllib.parse",
-        "documentation": {}
-    },
-    {
-        "label": "urlparse",
-        "importPath": "urllib.parse",
-        "description": "urllib.parse",
-        "isExtraImport": true,
-        "detail": "urllib.parse",
-        "documentation": {}
-    },
-    {
-        "label": "parse_qs",
-        "importPath": "urllib.parse",
-        "description": "urllib.parse",
-        "isExtraImport": true,
-        "detail": "urllib.parse",
-        "documentation": {}
-    },
-    {
         "label": "async_playwright",
         "importPath": "playwright.async_api",
         "description": "playwright.async_api",
@@ -835,20 +860,27 @@
         "documentation": {}
     },
     {
+        "label": "Product",
+        "importPath": "procurement.models",
+        "description": "procurement.models",
+        "isExtraImport": true,
+        "detail": "procurement.models",
+        "documentation": {}
+    },
+    {
+        "label": "MasterVendor",
+        "importPath": "procurement.models",
+        "description": "procurement.models",
+        "isExtraImport": true,
+        "detail": "procurement.models",
+        "documentation": {}
+    },
+    {
         "label": "sync_to_async",
         "importPath": "asgiref.sync",
         "description": "asgiref.sync",
         "isExtraImport": true,
         "detail": "asgiref.sync",
-        "documentation": {}
-    },
-    {
-        "label": "django.db.models.deletion",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "django.db.models.deletion",
-        "description": "django.db.models.deletion",
-        "detail": "django.db.models.deletion",
         "documentation": {}
     },
     {
@@ -878,28 +910,12 @@
         "documentation": {}
     },
     {
-        "label": "decode_header",
-        "importPath": "email.header",
-        "description": "email.header",
-        "isExtraImport": true,
-        "detail": "email.header",
-        "documentation": {}
-    },
-    {
         "label": "fitz",
         "kind": 6,
         "isExtraImport": true,
         "importPath": "fitz",
         "description": "fitz",
         "detail": "fitz",
-        "documentation": {}
-    },
-    {
-        "label": "Image",
-        "importPath": "PIL",
-        "description": "PIL",
-        "isExtraImport": true,
-        "detail": "PIL",
         "documentation": {}
     },
     {
@@ -956,6 +972,22 @@
         "documentation": {}
     },
     {
+        "label": "Decimal",
+        "importPath": "decimal",
+        "description": "decimal",
+        "isExtraImport": true,
+        "detail": "decimal",
+        "documentation": {}
+    },
+    {
+        "label": "EmailMessage",
+        "importPath": "django.core.mail",
+        "description": "django.core.mail",
+        "isExtraImport": true,
+        "detail": "django.core.mail",
+        "documentation": {}
+    },
+    {
         "label": "send_mail",
         "importPath": "django.core.mail",
         "description": "django.core.mail",
@@ -980,152 +1012,11 @@
         "documentation": {}
     },
     {
-        "label": "uuid",
-        "kind": 6,
+        "label": "Count",
+        "importPath": "django.db.models",
+        "description": "django.db.models",
         "isExtraImport": true,
-        "importPath": "uuid",
-        "description": "uuid",
-        "detail": "uuid",
-        "documentation": {}
-    },
-    {
-        "label": "MinValueValidator",
-        "importPath": "django.core.validators",
-        "description": "django.core.validators",
-        "isExtraImport": true,
-        "detail": "django.core.validators",
-        "documentation": {}
-    },
-    {
-        "label": "webvtt",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "webvtt",
-        "description": "webvtt",
-        "detail": "webvtt",
-        "documentation": {}
-    },
-    {
-        "label": "cache",
-        "importPath": "django.core.cache",
-        "description": "django.core.cache",
-        "isExtraImport": true,
-        "detail": "django.core.cache",
-        "documentation": {}
-    },
-    {
-        "label": "YoutubeDL",
-        "importPath": "yt_dlp",
-        "description": "yt_dlp",
-        "isExtraImport": true,
-        "detail": "yt_dlp",
-        "documentation": {}
-    },
-    {
-        "label": "VideoFileClip",
-        "importPath": "moviepy.editor",
-        "description": "moviepy.editor",
-        "isExtraImport": true,
-        "detail": "moviepy.editor",
-        "documentation": {}
-    },
-    {
-        "label": "CompositeVideoClip",
-        "importPath": "moviepy.editor",
-        "description": "moviepy.editor",
-        "isExtraImport": true,
-        "detail": "moviepy.editor",
-        "documentation": {}
-    },
-    {
-        "label": "ColorClip",
-        "importPath": "moviepy.editor",
-        "description": "moviepy.editor",
-        "isExtraImport": true,
-        "detail": "moviepy.editor",
-        "documentation": {}
-    },
-    {
-        "label": "crop",
-        "importPath": "moviepy.video.fx.all",
-        "description": "moviepy.video.fx.all",
-        "isExtraImport": true,
-        "detail": "moviepy.video.fx.all",
-        "documentation": {}
-    },
-    {
-        "label": "resize",
-        "importPath": "moviepy.video.fx.all",
-        "description": "moviepy.video.fx.all",
-        "isExtraImport": true,
-        "detail": "moviepy.video.fx.all",
-        "documentation": {}
-    },
-    {
-        "label": "googleapiclient.discovery",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "googleapiclient.discovery",
-        "description": "googleapiclient.discovery",
-        "detail": "googleapiclient.discovery",
-        "documentation": {}
-    },
-    {
-        "label": "build",
-        "importPath": "googleapiclient.discovery",
-        "description": "googleapiclient.discovery",
-        "isExtraImport": true,
-        "detail": "googleapiclient.discovery",
-        "documentation": {}
-    },
-    {
-        "label": "googleapiclient.errors",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "googleapiclient.errors",
-        "description": "googleapiclient.errors",
-        "detail": "googleapiclient.errors",
-        "documentation": {}
-    },
-    {
-        "label": "HttpError",
-        "importPath": "googleapiclient.errors",
-        "description": "googleapiclient.errors",
-        "isExtraImport": true,
-        "detail": "googleapiclient.errors",
-        "documentation": {}
-    },
-    {
-        "label": "pickle",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "pickle",
-        "description": "pickle",
-        "detail": "pickle",
-        "documentation": {}
-    },
-    {
-        "label": "InstalledAppFlow",
-        "importPath": "google_auth_oauthlib.flow",
-        "description": "google_auth_oauthlib.flow",
-        "isExtraImport": true,
-        "detail": "google_auth_oauthlib.flow",
-        "documentation": {}
-    },
-    {
-        "label": "Request",
-        "importPath": "google.auth.transport.requests",
-        "description": "google.auth.transport.requests",
-        "isExtraImport": true,
-        "detail": "google.auth.transport.requests",
-        "documentation": {}
-    },
-    {
-        "label": "MediaFileUpload",
-        "importPath": "googleapiclient.http",
-        "description": "googleapiclient.http",
-        "isExtraImport": true,
-        "detail": "googleapiclient.http",
+        "detail": "django.db.models",
         "documentation": {}
     },
     {
@@ -1260,22 +1151,6 @@
     },
     {
         "label": "ArgumentParser",
-        "importPath": "argparse",
-        "description": "argparse",
-        "isExtraImport": true,
-        "detail": "argparse",
-        "documentation": {}
-    },
-    {
-        "label": "ArgumentParser",
-        "importPath": "argparse",
-        "description": "argparse",
-        "isExtraImport": true,
-        "detail": "argparse",
-        "documentation": {}
-    },
-    {
-        "label": "FileType",
         "importPath": "argparse",
         "description": "argparse",
         "isExtraImport": true,
@@ -1420,38 +1295,6 @@
         "documentation": {}
     },
     {
-        "label": "print_function",
-        "importPath": "__future__",
-        "description": "__future__",
-        "isExtraImport": true,
-        "detail": "__future__",
-        "documentation": {}
-    },
-    {
-        "label": "concat",
-        "importPath": "pandas",
-        "description": "pandas",
-        "isExtraImport": true,
-        "detail": "pandas",
-        "documentation": {}
-    },
-    {
-        "label": "read_csv",
-        "importPath": "pandas",
-        "description": "pandas",
-        "isExtraImport": true,
-        "detail": "pandas",
-        "documentation": {}
-    },
-    {
-        "label": "empty",
-        "importPath": "numpy",
-        "description": "numpy",
-        "isExtraImport": true,
-        "detail": "numpy",
-        "documentation": {}
-    },
-    {
         "label": "pdfminer.high_level",
         "kind": 6,
         "isExtraImport": true,
@@ -1466,6 +1309,14 @@
         "description": "pdfminer.layout",
         "isExtraImport": true,
         "detail": "pdfminer.layout",
+        "documentation": {}
+    },
+    {
+        "label": "print_function",
+        "importPath": "__future__",
+        "description": "__future__",
+        "isExtraImport": true,
+        "detail": "__future__",
         "documentation": {}
     },
     {
@@ -1508,6 +1359,15 @@
         "description": "AI_agent_center.ai_agent_pitch.management.commands.seed_templates",
         "peekOfCode": "class Command(BaseCommand):\n    \"\"\"\n    A Django management command to seed the database with initial email templates.\n    This command is idempotent, meaning it can be run multiple times without\n    creating duplicate templates.\n    \"\"\"\n    help = 'Seeds the database with initial email templates for the AI Pitch Agent.'\n    def handle(self, *args, **kwargs):\n        self.stdout.write(self.style.SUCCESS('--- Seeding Initial Email Templates ---'))\n        # --- Template 1: Dark Theme ---",
         "detail": "AI_agent_center.ai_agent_pitch.management.commands.seed_templates",
+        "documentation": {}
+    },
+    {
+        "label": "Migration",
+        "kind": 6,
+        "importPath": "AI_agent_center.ai_agent_pitch.migrations.0001_initial",
+        "description": "AI_agent_center.ai_agent_pitch.migrations.0001_initial",
+        "peekOfCode": "class Migration(migrations.Migration):\n    initial = True\n    dependencies = [\n    ]\n    operations = [\n        migrations.CreateModel(\n            name='Campaign',\n            fields=[\n                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),\n                ('subject', models.CharField(max_length=255)),",
+        "detail": "AI_agent_center.ai_agent_pitch.migrations.0001_initial",
         "documentation": {}
     },
     {
@@ -1668,7 +1528,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "BASE_DIR = Path(__file__).resolve().parent.parent\n# Load environment variables from .env file\nload_dotenv(os.path.join(BASE_DIR, '.env'))\n# Security settings\nGEMINI_API_KEY = os.getenv('GEMINI_API_KEY')\nYOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')\n# Quick-start development settings\nSECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv(\"SERPAPI_API_KEY\")\nDEBUG = True",
+        "peekOfCode": "BASE_DIR = Path(__file__).resolve().parent.parent\n# Load environment variables from .env file\nload_dotenv(os.path.join(BASE_DIR, '.env'))\n# Security settings\nGEMINI_API_KEY = os.getenv('GEMINI_API_KEY')\nYOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')\n# Quick-start development settings\nSECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY')\nDEBUG = True",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1677,7 +1537,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')\nYOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')\n# Quick-start development settings\nSECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv(\"SERPAPI_API_KEY\")\nDEBUG = True\nALLOWED_HOSTS = ['*']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',",
+        "peekOfCode": "GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')\nYOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')\n# Quick-start development settings\nSECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY')\nDEBUG = True\nALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1686,7 +1546,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')\n# Quick-start development settings\nSECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv(\"SERPAPI_API_KEY\")\nDEBUG = True\nALLOWED_HOSTS = ['*']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',",
+        "peekOfCode": "YOUTUBE_API_KEY = os.getenv('YOUTUBE_API_KEY')\n# Quick-start development settings\nSECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY')\nDEBUG = True\nALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1695,7 +1555,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "SECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv(\"SERPAPI_API_KEY\")\nDEBUG = True\nALLOWED_HOSTS = ['*']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',",
+        "peekOfCode": "SECRET_KEY = os.getenv('SECRET_KEY')\nSERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY')\nDEBUG = True\nALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1704,7 +1564,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "SERPAPI_API_KEY = os.getenv(\"SERPAPI_API_KEY\")\nDEBUG = True\nALLOWED_HOSTS = ['*']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',\n    'django.contrib.staticfiles',",
+        "peekOfCode": "SERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY')\nDEBUG = True\nALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',\n    'django.contrib.staticfiles',",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1713,7 +1573,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "DEBUG = True\nALLOWED_HOSTS = ['*']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',\n    'django.contrib.staticfiles',\n    'core',",
+        "peekOfCode": "DEBUG = True\nALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',\n    'django.contrib.staticfiles',\n    'core',",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1722,7 +1582,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "ALLOWED_HOSTS = ['*']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',\n    'django.contrib.staticfiles',\n    'core',\n    'marketing_outreach',",
+        "peekOfCode": "ALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # Restrict in production\nINSTALLED_APPS = [\n    'django.contrib.admin',\n    'django.contrib.auth',\n    'django.contrib.contenttypes',\n    'django.contrib.sessions',\n    'django.contrib.messages',\n    'django.contrib.staticfiles',\n    'core',\n    'marketing_outreach',",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1767,7 +1627,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "WSGI_APPLICATION = 'command_center.wsgi.application'\nDATABASES = {\n    'default': {\n        'ENGINE': 'django.db.backends.sqlite3',\n        'NAME': BASE_DIR / 'db.sqlite3',\n    }\n}\nAUTH_PASSWORD_VALIDATORS = [\n    {\n        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',",
+        "peekOfCode": "WSGI_APPLICATION = 'command_center.wsgi.application'\nDATABASES = {\n    'default': {\n        'ENGINE': 'django.db.backends.postgresql',\n        'NAME': os.getenv('DB_NAME'),\n        'USER': os.getenv('DB_USER'),\n        'PASSWORD': os.getenv('DB_PASSWORD'),\n        'HOST': os.getenv('DB_HOST', 'localhost'),\n        'PORT': os.getenv('DB_PORT', '5432'),\n    }",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1776,7 +1636,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "DATABASES = {\n    'default': {\n        'ENGINE': 'django.db.backends.sqlite3',\n        'NAME': BASE_DIR / 'db.sqlite3',\n    }\n}\nAUTH_PASSWORD_VALIDATORS = [\n    {\n        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',\n    },",
+        "peekOfCode": "DATABASES = {\n    'default': {\n        'ENGINE': 'django.db.backends.postgresql',\n        'NAME': os.getenv('DB_NAME'),\n        'USER': os.getenv('DB_USER'),\n        'PASSWORD': os.getenv('DB_PASSWORD'),\n        'HOST': os.getenv('DB_HOST', 'localhost'),\n        'PORT': os.getenv('DB_PORT', '5432'),\n    }\n}",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1857,7 +1717,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "MEDIA_URL = '/media/'\nMEDIA_ROOT = os.path.join(BASE_DIR, 'media')\nDEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n# Email Configuration (SendGrid)\nSENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration",
+        "peekOfCode": "MEDIA_URL = '/media/'\nMEDIA_ROOT = os.path.join(BASE_DIR, 'media')\nDEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n# Email Configuration (SendGrid)\nSENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1866,7 +1726,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "MEDIA_ROOT = os.path.join(BASE_DIR, 'media')\nDEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n# Email Configuration (SendGrid)\nSENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration\nLOGGING = {",
+        "peekOfCode": "MEDIA_ROOT = os.path.join(BASE_DIR, 'media')\nDEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n# Email Configuration (SendGrid)\nSENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py\nSEARXNG_INSTANCE_URL = 'http://localhost:8080'",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1875,7 +1735,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n# Email Configuration (SendGrid)\nSENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration\nLOGGING = {\n    'version': 1,",
+        "peekOfCode": "DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'\n# Email Configuration (SendGrid)\nSENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py\nSEARXNG_INSTANCE_URL = 'http://localhost:8080'\n# Logging Configuration",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1884,7 +1744,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {",
+        "peekOfCode": "SENDGRID_API_KEY = os.getenv('SENDGRID_API_KEY')\nEMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py\nSEARXNG_INSTANCE_URL = 'http://localhost:8080'\n# Logging Configuration\nLOGGING = {\n    'version': 1,",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1893,7 +1753,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {\n        'console': {",
+        "peekOfCode": "EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')\nDEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py\nSEARXNG_INSTANCE_URL = 'http://localhost:8080'\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1902,7 +1762,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {\n        'console': {\n            'class': 'logging.StreamHandler',",
+        "peekOfCode": "DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')\nDEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py\nSEARXNG_INSTANCE_URL = 'http://localhost:8080'\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1911,7 +1771,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "DEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {\n        'console': {\n            'class': 'logging.StreamHandler',\n        },",
+        "peekOfCode": "DEFAULT_FROM_NAME = 'Kalika AI'\nSITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py\nSEARXNG_INSTANCE_URL = 'http://localhost:8080'\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {\n        'console': {",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1920,7 +1780,16 @@
         "kind": 5,
         "importPath": "AI_agent_center.command_center.settings",
         "description": "AI_agent_center.command_center.settings",
-        "peekOfCode": "SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {\n        'console': {\n            'class': 'logging.StreamHandler',\n        },\n        'file': {",
+        "peekOfCode": "SITE_URL = os.getenv('SITE_URL', 'http://localhost:8000')\n# In settings.py\nSEARXNG_INSTANCE_URL = 'http://localhost:8080'\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {\n        'console': {\n            'class': 'logging.StreamHandler',",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "SEARXNG_INSTANCE_URL",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "SEARXNG_INSTANCE_URL = 'http://localhost:8080'\n# Logging Configuration\nLOGGING = {\n    'version': 1,\n    'disable_existing_loggers': False,\n    'handlers': {\n        'console': {\n            'class': 'logging.StreamHandler',\n        },\n        'file': {",
         "detail": "AI_agent_center.command_center.settings",
         "documentation": {}
     },
@@ -1934,11 +1803,128 @@
         "documentation": {}
     },
     {
+        "label": "EMAIL_BACKEND",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'\nEMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')\nEMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))\nEMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'\nEMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your sending email address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nEMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n# --- EMAIL READING (IMAP) ---\n# Used for reading and parsing incoming quotes",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIL_HOST",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "EMAIL_HOST = os.environ.get('EMAIL_HOST', 'smtp.gmail.com')\nEMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))\nEMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'\nEMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your sending email address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nEMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n# --- EMAIL READING (IMAP) ---\n# Used for reading and parsing incoming quotes\nGMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIL_PORT",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))\nEMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'\nEMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your sending email address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nEMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n# --- EMAIL READING (IMAP) ---\n# Used for reading and parsing incoming quotes\nGMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')\nGMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIL_USE_TLS",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True') == 'True'\nEMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your sending email address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nEMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n# --- EMAIL READING (IMAP) ---\n# Used for reading and parsing incoming quotes\nGMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')\nGMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIL_HOST_USER",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER') # Your sending email address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nEMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n# --- EMAIL READING (IMAP) ---\n# Used for reading and parsing incoming quotes\nGMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')\nGMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nGMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "EMAIL_HOST_PASSWORD",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD')\nDEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n# --- EMAIL READING (IMAP) ---\n# Used for reading and parsing incoming quotes\nGMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')\nGMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nGMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')\n# Django ko batayein ki aapka custom login page kahan hai.\nLOGIN_URL = 'core:login'",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "DEFAULT_FROM_EMAIL",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "DEFAULT_FROM_EMAIL = EMAIL_HOST_USER\n# --- EMAIL READING (IMAP) ---\n# Used for reading and parsing incoming quotes\nGMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')\nGMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nGMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')\n# Django ko batayein ki aapka custom login page kahan hai.\nLOGIN_URL = 'core:login'\n# Login karne ke baad user ko kahan bhejna hai.",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "GMAIL_IMAP_HOST",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "GMAIL_IMAP_HOST = os.environ.get('GMAIL_IMAP_HOST', 'imap.gmail.com')\nGMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nGMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')\n# Django ko batayein ki aapka custom login page kahan hai.\nLOGIN_URL = 'core:login'\n# Login karne ke baad user ko kahan bhejna hai.\nLOGIN_REDIRECT_URL = 'core:agent_selector'\n# Logout karne ke baad user ko kahan bhejna hai.\nLOGOUT_REDIRECT_URL = 'core:login'",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "GMAIL_ADDRESS",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "GMAIL_ADDRESS = os.environ.get('GMAIL_ADDRESS') # Your monitored inbox address\n# IMPORTANT: Use a Gmail \"App Password\" if using Gmail\nGMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')\n# Django ko batayein ki aapka custom login page kahan hai.\nLOGIN_URL = 'core:login'\n# Login karne ke baad user ko kahan bhejna hai.\nLOGIN_REDIRECT_URL = 'core:agent_selector'\n# Logout karne ke baad user ko kahan bhejna hai.\nLOGOUT_REDIRECT_URL = 'core:login'",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "GMAIL_APP_PASSWORD",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "GMAIL_APP_PASSWORD = os.environ.get('GMAIL_APP_PASSWORD')\n# Django ko batayein ki aapka custom login page kahan hai.\nLOGIN_URL = 'core:login'\n# Login karne ke baad user ko kahan bhejna hai.\nLOGIN_REDIRECT_URL = 'core:agent_selector'\n# Logout karne ke baad user ko kahan bhejna hai.\nLOGOUT_REDIRECT_URL = 'core:login'",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "LOGIN_URL",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "LOGIN_URL = 'core:login'\n# Login karne ke baad user ko kahan bhejna hai.\nLOGIN_REDIRECT_URL = 'core:agent_selector'\n# Logout karne ke baad user ko kahan bhejna hai.\nLOGOUT_REDIRECT_URL = 'core:login'",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "LOGIN_REDIRECT_URL",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "LOGIN_REDIRECT_URL = 'core:agent_selector'\n# Logout karne ke baad user ko kahan bhejna hai.\nLOGOUT_REDIRECT_URL = 'core:login'",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
+        "label": "LOGOUT_REDIRECT_URL",
+        "kind": 5,
+        "importPath": "AI_agent_center.command_center.settings",
+        "description": "AI_agent_center.command_center.settings",
+        "peekOfCode": "LOGOUT_REDIRECT_URL = 'core:login'",
+        "detail": "AI_agent_center.command_center.settings",
+        "documentation": {}
+    },
+    {
         "label": "urlpatterns",
         "kind": 5,
         "importPath": "AI_agent_center.command_center.urls",
         "description": "AI_agent_center.command_center.urls",
-        "peekOfCode": "urlpatterns = [\n    path('admin/', admin.site.urls),\n    path('', include('core.urls')),\n    path('pitch/', include('ai_agent_pitch.urls')),\n    path('shorts/', include('shorts_app.urls')),\n    # --- ADD THESE TWO LINES ---\n    # This tells Django to look in marketing_outreach/urls.py for any URL starting with 'marketing/'\n    path('marketing/', include('marketing_outreach.urls')),\n    # This tells Django to look in procurement/urls.py for any URL starting with 'procurement/'\n    path('procurement/', include('procurement.urls')),",
+        "peekOfCode": "urlpatterns = [\n    path('admin/', admin.site.urls),\n    path('', include('core.urls')),\n    path('pitch/', include('ai_agent_pitch.urls')),\n    # --- ADD THESE TWO LINES ---\n    # This tells Django to look in marketing_outreach/urls.py for any URL starting with 'marketing/'\n    path('marketing/', include('marketing_outreach.urls')),\n    # This tells Django to look in procurement/urls.py for any URL starting with 'procurement/'\n    path('procurement/', include('procurement.urls')),\n]",
         "detail": "AI_agent_center.command_center.urls",
         "documentation": {}
     },
@@ -1961,11 +1947,20 @@
         "documentation": {}
     },
     {
+        "label": "UserRegisterForm",
+        "kind": 6,
+        "importPath": "AI_agent_center.core.forms",
+        "description": "AI_agent_center.core.forms",
+        "peekOfCode": "class UserRegisterForm(UserCreationForm):\n    email = forms.EmailField()\n    class Meta:\n        model = User\n        fields = ['username', 'email']",
+        "detail": "AI_agent_center.core.forms",
+        "documentation": {}
+    },
+    {
         "label": "app_name",
         "kind": 5,
         "importPath": "AI_agent_center.core.urls",
         "description": "AI_agent_center.core.urls",
-        "peekOfCode": "app_name = 'core'\nurlpatterns = [\n    path('', views.agent_selector_view, name='agent_selector'),\n]",
+        "peekOfCode": "app_name = 'core'\nurlpatterns = [\n    # Your custom views\n    path('register/', views.register_view, name='register'),\n    path('login/', views.login_view, name='login'),\n    path('logout/', views.logout_view, name='logout'),\n    path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),\n    # Agent selector (homepage after login)\n    path('', views.agent_selector_view, name='agent_selector'),\n    # Password Reset URLs (Updated to handle namespaces)",
         "detail": "AI_agent_center.core.urls",
         "documentation": {}
     },
@@ -1974,8 +1969,44 @@
         "kind": 5,
         "importPath": "AI_agent_center.core.urls",
         "description": "AI_agent_center.core.urls",
-        "peekOfCode": "urlpatterns = [\n    path('', views.agent_selector_view, name='agent_selector'),\n]",
+        "peekOfCode": "urlpatterns = [\n    # Your custom views\n    path('register/', views.register_view, name='register'),\n    path('login/', views.login_view, name='login'),\n    path('logout/', views.logout_view, name='logout'),\n    path('admin-dashboard/', views.admin_dashboard_view, name='admin_dashboard'),\n    # Agent selector (homepage after login)\n    path('', views.agent_selector_view, name='agent_selector'),\n    # Password Reset URLs (Updated to handle namespaces)\n    path('password-reset/', ",
         "detail": "AI_agent_center.core.urls",
+        "documentation": {}
+    },
+    {
+        "label": "create_admin_user",
+        "kind": 2,
+        "importPath": "AI_agent_center.core.views",
+        "description": "AI_agent_center.core.views",
+        "peekOfCode": "def create_admin_user():\n    \"\"\"Creates the 'kalisoft' admin user if it doesn't exist.\"\"\"\n    if not User.objects.filter(username='kalisoft').exists():\n        User.objects.create_superuser('kalisoft', 'kalisoft@example.com', 'kalisoft309')\n        print(\"Admin user 'kalisoft' created successfully.\")\n# Register View\ndef register_view(request):\n    if request.user.is_authenticated:\n        return redirect('core:agent_selector')\n    if request.method == 'POST':",
+        "detail": "AI_agent_center.core.views",
+        "documentation": {}
+    },
+    {
+        "label": "register_view",
+        "kind": 2,
+        "importPath": "AI_agent_center.core.views",
+        "description": "AI_agent_center.core.views",
+        "peekOfCode": "def register_view(request):\n    if request.user.is_authenticated:\n        return redirect('core:agent_selector')\n    if request.method == 'POST':\n        form = UserRegisterForm(request.POST)\n        if form.is_valid():\n            form.save()\n            username = form.cleaned_data.get('username')\n            messages.success(request, f'Your account, {username}, has been created! You can now log in.')\n            return redirect('core:login')",
+        "detail": "AI_agent_center.core.views",
+        "documentation": {}
+    },
+    {
+        "label": "login_view",
+        "kind": 2,
+        "importPath": "AI_agent_center.core.views",
+        "description": "AI_agent_center.core.views",
+        "peekOfCode": "def login_view(request):\n    # On app start, check for admin user and create if necessary\n    create_admin_user()\n    if request.user.is_authenticated:\n        return redirect('core:agent_selector')\n    if request.method == 'POST':\n        form = AuthenticationForm(request, data=request.POST)\n        if form.is_valid():\n            username = form.cleaned_data.get('username')\n            password = form.cleaned_data.get('password')",
+        "detail": "AI_agent_center.core.views",
+        "documentation": {}
+    },
+    {
+        "label": "logout_view",
+        "kind": 2,
+        "importPath": "AI_agent_center.core.views",
+        "description": "AI_agent_center.core.views",
+        "peekOfCode": "def logout_view(request):\n    logout(request)\n    return redirect('core:login')\n# Agent Selector View (Login is now required)\n@login_required\ndef agent_selector_view(request):\n    return render(request, 'core/agent_selector.html')\n# Admin Dashboard View\n@user_passes_test(lambda u: u.is_superuser)\ndef admin_dashboard_view(request):",
+        "detail": "AI_agent_center.core.views",
         "documentation": {}
     },
     {
@@ -1983,7 +2014,16 @@
         "kind": 2,
         "importPath": "AI_agent_center.core.views",
         "description": "AI_agent_center.core.views",
-        "peekOfCode": "def agent_selector_view(request):\n    return render(request, 'core/agent_selector.html')",
+        "peekOfCode": "def agent_selector_view(request):\n    return render(request, 'core/agent_selector.html')\n# Admin Dashboard View\n@user_passes_test(lambda u: u.is_superuser)\ndef admin_dashboard_view(request):\n    users = User.objects.all().order_by('-date_joined')\n    total_users = users.count()\n    context = {\n        'users': users,\n        'total_users': total_users",
+        "detail": "AI_agent_center.core.views",
+        "documentation": {}
+    },
+    {
+        "label": "admin_dashboard_view",
+        "kind": 2,
+        "importPath": "AI_agent_center.core.views",
+        "description": "AI_agent_center.core.views",
+        "peekOfCode": "def admin_dashboard_view(request):\n    users = User.objects.all().order_by('-date_joined')\n    total_users = users.count()\n    context = {\n        'users': users,\n        'total_users': total_users\n    }\n    return render(request, 'core/admin_dashboard.html', context)",
         "detail": "AI_agent_center.core.views",
         "documentation": {}
     },
@@ -2037,7 +2077,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.marketing_outreach.views",
         "description": "AI_agent_center.marketing_outreach.views",
-        "peekOfCode": "def search_companies_api(request):\n    \"\"\"\n    Searches Google for companies using SerpApi and extracts contact info from snippets.\n    \"\"\"\n    search_term = request.GET.get('q')\n    if not search_term:\n        return JsonResponse({'companies': []})\n    # Construct a targeted search query\n    search_query = f'\"{search_term}\" company contact email site:indiamart.com OR site:tradeindia.com OR site:zaubacorp.com'\n    params = {",
+        "peekOfCode": "def search_companies_api(request):\n    \"\"\"\n    Searches Google for companies using SerpApi and extracts contact info from snippets.\n    \"\"\"\n    search_term = request.GET.get('q')\n    if not search_term:\n        return JsonResponse({'error': 'Search term cannot be empty.'}, status=400)\n    # Check for API Key\n    if not settings.SERPAPI_API_KEY:\n        logger.error(\"SERPAPI_API_KEY is not configured.\")",
         "detail": "AI_agent_center.marketing_outreach.views",
         "documentation": {}
     },
@@ -2082,7 +2122,7 @@
         "kind": 6,
         "importPath": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "description": "AI_agent_center.procurement.management.commands.scrape_suppliers",
-        "peekOfCode": "class Command(BaseCommand):\n    help = 'Runs the expert 2-phase async supplier sourcing agent.'\n    def add_arguments(self, parser):\n        parser.add_argument('request_id', type=int, help='The ID of the procurement request to process')\n    def handle(self, *args, **options):\n        request_id = options['request_id']\n        asyncio.run(run_supplier_sourcing_agent(request_id))",
+        "peekOfCode": "class Command(BaseCommand):\n    help = 'Runs the supplier sourcing agent, now with automatic specification scraping.'\n    def add_arguments(self, parser):\n        parser.add_argument('request_id', type=int, help='The ID of the ProcurementRequest to process')\n    def handle(self, *args, **options):\n        request_id = options['request_id']\n        asyncio.run(run_supplier_sourcing_agent(request_id))",
         "detail": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "documentation": {}
     },
@@ -2091,7 +2131,16 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "description": "AI_agent_center.procurement.management.commands.scrape_suppliers",
-        "peekOfCode": "def clean_phone_number(phone_text: str) -> str | None:\n    \"\"\"Cleans and validates a found phone number string.\"\"\"\n    cleaned = re.sub(r'[^\\d+]', '', phone_text)\n    if len(re.sub(r'^\\+91', '', cleaned)) >= 10:\n        return cleaned\n    return None\nasync def find_contact_info(page: Page) -> dict:\n    \"\"\"Finds email and phone by checking page content and then a potential contact page.\"\"\"\n    details = {'email': None, 'phone': None}\n    base_url = page.url",
+        "peekOfCode": "def clean_phone_number(phone_text: str) -> str | None:\n    cleaned = re.sub(r'[^\\d+]', '', phone_text)\n    if len(re.sub(r'^\\+91', '', cleaned)) >= 10:\n        return cleaned\n    return None\nasync def find_contact_info(page: Page) -> dict:\n    details = {'email': None, 'phone': None}\n    base_url = page.url\n    try:\n        await page.wait_for_load_state('networkidle', timeout=30000)",
+        "detail": "AI_agent_center.procurement.management.commands.scrape_suppliers",
+        "documentation": {}
+    },
+    {
+        "label": "search_with_searxng",
+        "kind": 2,
+        "importPath": "AI_agent_center.procurement.management.commands.scrape_suppliers",
+        "description": "AI_agent_center.procurement.management.commands.scrape_suppliers",
+        "peekOfCode": "def search_with_searxng(query: str, num_results: int = 10, start_index: int = 0) -> list:\n    if not settings.SEARXNG_INSTANCE_URL:\n        print(\"   - SearXNG is not configured. Skipping fallback.\")\n        return []\n    try:\n        print(f\"   - Querying SearXNG: '{query}'\")\n        params = {'q': query, 'format': 'json', 'pageno': (start_index // num_results) + 1}\n        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'}\n        response = requests.get(\n            settings.SEARXNG_INSTANCE_URL + \"/search\",",
         "detail": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "documentation": {}
     },
@@ -2100,7 +2149,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "description": "AI_agent_center.procurement.management.commands.scrape_suppliers",
-        "peekOfCode": "def get_procurement_request(request_id: int):\n    return ProcurementRequest.objects.get(id=request_id)\n@sync_to_async\ndef save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list):\n    proc_request.suppliers.all().delete()\n    saved_count = 0\n    seen_emails = set()\n    for data in suppliers_data:\n        if data.get('email') and data['email'] not in seen_emails:\n            Supplier.objects.create(",
+        "peekOfCode": "def get_procurement_request(request_id: int):\n    return ProcurementRequest.objects.select_related('product').get(id=request_id)\n@sync_to_async\ndef save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list):\n    proc_request.suppliers.all().delete() # Note: Consider if you want to append instead of replace\n    saved_count = 0\n    seen_emails = set()\n    product = proc_request.product\n    for data in suppliers_data:\n        email = data.get('email')",
         "detail": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "documentation": {}
     },
@@ -2109,7 +2158,16 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "description": "AI_agent_center.procurement.management.commands.scrape_suppliers",
-        "peekOfCode": "def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list):\n    proc_request.suppliers.all().delete()\n    saved_count = 0\n    seen_emails = set()\n    for data in suppliers_data:\n        if data.get('email') and data['email'] not in seen_emails:\n            Supplier.objects.create(\n                procurement_request=proc_request, name=data.get('name', 'N/A'),\n                email=data.get('email'), phone=data.get('phone'), source_link=data.get('source_link'))\n            seen_emails.add(data['email'])",
+        "peekOfCode": "def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list):\n    proc_request.suppliers.all().delete() # Note: Consider if you want to append instead of replace\n    saved_count = 0\n    seen_emails = set()\n    product = proc_request.product\n    for data in suppliers_data:\n        email = data.get('email')\n        if email and email not in seen_emails:\n            master_vendor, created = MasterVendor.objects.get_or_create(\n                email=email,",
+        "detail": "AI_agent_center.procurement.management.commands.scrape_suppliers",
+        "documentation": {}
+    },
+    {
+        "label": "update_request_specs",
+        "kind": 2,
+        "importPath": "AI_agent_center.procurement.management.commands.scrape_suppliers",
+        "description": "AI_agent_center.procurement.management.commands.scrape_suppliers",
+        "peekOfCode": "def update_request_specs(proc_request: ProcurementRequest, new_specs: str):\n    \"\"\"Appends scraped specifications to the existing specs.\"\"\"\n    current_specs = proc_request.specs or \"\"\n    # Append new specs, ensuring not to add if already present\n    if \"--- Auto-scraped Specifications ---\" not in current_specs:\n        updated_specs = f\"{current_specs}\\n\\n--- Auto-scraped Specifications ---\\n{new_specs}\".strip()\n        proc_request.specs = updated_specs\n        proc_request.save(update_fields=['specs'])\n        print(f\"   ✅ Updated request {proc_request.id} with scraped specifications.\")\n@sync_to_async",
         "detail": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "documentation": {}
     },
@@ -2118,7 +2176,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "description": "AI_agent_center.procurement.management.commands.scrape_suppliers",
-        "peekOfCode": "def set_request_status(proc_request: ProcurementRequest, status: str):\n    proc_request.status = status\n    proc_request.save()\n# --- Main Sourcing Agent Logic ---\nasync def run_supplier_sourcing_agent(request_id):\n    proc_request = await get_procurement_request(request_id)\n    if not proc_request:\n        print(f\"Error: ProcurementRequest with ID {request_id} not found.\")\n        return\n    product_name = proc_request.title",
+        "peekOfCode": "def set_request_status(proc_request: ProcurementRequest, status: str):\n    proc_request.status = status\n    proc_request.save()\n# --- Main Sourcing Agent Logic ---\nasync def run_supplier_sourcing_agent(request_id):\n    proc_request = await get_procurement_request(request_id)\n    if not proc_request:\n        print(f\"Error: ProcurementRequest with ID {request_id} not found.\")\n        return\n    product_name = proc_request.product.name if proc_request.product else proc_request.title",
         "detail": "AI_agent_center.procurement.management.commands.scrape_suppliers",
         "documentation": {}
     },
@@ -2127,7 +2185,7 @@
         "kind": 6,
         "importPath": "AI_agent_center.procurement.migrations.0001_initial",
         "description": "AI_agent_center.procurement.migrations.0001_initial",
-        "peekOfCode": "class Migration(migrations.Migration):\n    initial = True\n    dependencies = [\n    ]\n    operations = [\n        migrations.CreateModel(\n            name='ProcurementRequest',\n            fields=[\n                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),\n                ('title', models.CharField(max_length=255)),",
+        "peekOfCode": "class Migration(migrations.Migration):\n    initial = True\n    dependencies = [\n    ]\n    operations = [\n        migrations.CreateModel(\n            name='Product',\n            fields=[\n                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),\n                ('name', models.CharField(max_length=255, unique=True)),",
         "detail": "AI_agent_center.procurement.migrations.0001_initial",
         "documentation": {}
     },
@@ -2138,6 +2196,24 @@
         "description": "AI_agent_center.procurement.apps",
         "peekOfCode": "class ProcurementConfig(AppConfig):\n    default_auto_field = 'django.db.models.BigAutoField'\n    name = 'procurement'",
         "detail": "AI_agent_center.procurement.apps",
+        "documentation": {}
+    },
+    {
+        "label": "Product",
+        "kind": 6,
+        "importPath": "AI_agent_center.procurement.models",
+        "description": "AI_agent_center.procurement.models",
+        "peekOfCode": "class Product(models.Model):\n    name = models.CharField(max_length=255, unique=True)\n    def __str__(self):\n        return self.name\nclass MasterVendor(models.Model):\n    name = models.CharField(max_length=255)\n    email = models.EmailField(unique=True, null=True, blank=True)\n    phone = models.CharField(max_length=50, blank=True, null=True)\n    source_link = models.URLField(max_length=500, blank=True, null=True)\n    products = models.ManyToManyField(Product, related_name='vendors')",
+        "detail": "AI_agent_center.procurement.models",
+        "documentation": {}
+    },
+    {
+        "label": "MasterVendor",
+        "kind": 6,
+        "importPath": "AI_agent_center.procurement.models",
+        "description": "AI_agent_center.procurement.models",
+        "peekOfCode": "class MasterVendor(models.Model):\n    name = models.CharField(max_length=255)\n    email = models.EmailField(unique=True, null=True, blank=True)\n    phone = models.CharField(max_length=50, blank=True, null=True)\n    source_link = models.URLField(max_length=500, blank=True, null=True)\n    products = models.ManyToManyField(Product, related_name='vendors')\n    def __str__(self):\n        return self.name\nclass ProcurementRequest(models.Model):\n    STATUS_CHOICES = [",
+        "detail": "AI_agent_center.procurement.models",
         "documentation": {}
     },
     {
@@ -2154,7 +2230,7 @@
         "kind": 6,
         "importPath": "AI_agent_center.procurement.models",
         "description": "AI_agent_center.procurement.models",
-        "peekOfCode": "class Supplier(models.Model):\n    procurement_request = models.ForeignKey(ProcurementRequest, related_name='suppliers', on_delete=models.CASCADE)\n    name = models.CharField(max_length=255)\n    email = models.EmailField(blank=True, null=True)\n    phone = models.CharField(max_length=50, blank=True, null=True)\n    source_link = models.URLField(max_length=500, blank=True, null=True)\n    indiamart_rfq_sent = models.BooleanField(default=False)\n    def __str__(self):\n        return self.name\nclass Quote(models.Model):",
+        "peekOfCode": "class Supplier(models.Model):\n    procurement_request = models.ForeignKey(ProcurementRequest, related_name='suppliers', on_delete=models.CASCADE)\n    master_vendor = models.ForeignKey(MasterVendor, on_delete=models.CASCADE, null=True, blank=True)\n    name = models.CharField(max_length=255)\n    email = models.EmailField(blank=True, null=True)\n    phone = models.CharField(max_length=50, blank=True, null=True)\n    source_link = models.URLField(max_length=500, blank=True, null=True)\n    indiamart_rfq_sent = models.BooleanField(default=False)\n    def __str__(self):\n        return self.name",
         "detail": "AI_agent_center.procurement.models",
         "documentation": {}
     },
@@ -2163,7 +2239,7 @@
         "kind": 6,
         "importPath": "AI_agent_center.procurement.models",
         "description": "AI_agent_center.procurement.models",
-        "peekOfCode": "class Quote(models.Model):\n    procurement_request = models.ForeignKey(ProcurementRequest, related_name='quotes', on_delete=models.CASCADE)\n    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)\n    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)\n    lead_time_days = models.IntegerField(blank=True, null=True)\n    payment_terms = models.CharField(max_length=100, blank=True, null=True)\n    # ✨ NEW: Field to store extracted discount information\n    discount = models.CharField(max_length=100, blank=True, null=True)\n    parsed_from_email_uid = models.CharField(max_length=100, unique=True)\n    full_email_body = models.TextField(blank=True, null=True)",
+        "peekOfCode": "class Quote(models.Model):\n    procurement_request = models.ForeignKey(ProcurementRequest, related_name='quotes', on_delete=models.CASCADE)\n    supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)\n    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)\n    lead_time_days = models.IntegerField(blank=True, null=True)\n    payment_terms = models.CharField(max_length=100, blank=True, null=True)\n    discount = models.CharField(max_length=100, blank=True, null=True)\n    parsed_from_email_uid = models.CharField(max_length=100, unique=True)\n    full_email_body = models.TextField(blank=True, null=True)\n    def __str__(self):",
         "detail": "AI_agent_center.procurement.models",
         "documentation": {}
     },
@@ -2172,7 +2248,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.procurement.urls",
         "description": "AI_agent_center.procurement.urls",
-        "peekOfCode": "app_name = 'procurement'\nurlpatterns = [\n    # Page view\n    path('', views.procurement_dashboard_view, name='dashboard'),\n    # API views for creating requests\n    path('api/add-request/', views.add_request_api, name='api_add_request'),\n    path('api/bulk-upload/', views.bulk_upload_api, name='api_bulk_upload'),\n    # Main request details and action endpoints\n    path('api/get-request-details/<int:pk>/', views.get_request_details_api, name='api_get_request_details'),\n    path('api/delete-request/<int:pk>/', views.delete_request_api, name='api_delete_request'),",
+        "peekOfCode": "app_name = 'procurement'\nurlpatterns = [\n    # Page views\n    path('', views.procurement_dashboard_view, name='dashboard'),\n    path('analysis/', views.analysis_view, name='analysis'),\n    # API views for creating requests\n    path('api/add-request/', views.add_request_api, name='api_add_request'),\n    path('api/bulk-upload/', views.bulk_upload_api, name='api_bulk_upload'),\n    # Main request details and action endpoints\n    path('api/get-request-details/<int:pk>/', views.get_request_details_api, name='api_get_request_details'),",
         "detail": "AI_agent_center.procurement.urls",
         "documentation": {}
     },
@@ -2181,7 +2257,7 @@
         "kind": 5,
         "importPath": "AI_agent_center.procurement.urls",
         "description": "AI_agent_center.procurement.urls",
-        "peekOfCode": "urlpatterns = [\n    # Page view\n    path('', views.procurement_dashboard_view, name='dashboard'),\n    # API views for creating requests\n    path('api/add-request/', views.add_request_api, name='api_add_request'),\n    path('api/bulk-upload/', views.bulk_upload_api, name='api_bulk_upload'),\n    # Main request details and action endpoints\n    path('api/get-request-details/<int:pk>/', views.get_request_details_api, name='api_get_request_details'),\n    path('api/delete-request/<int:pk>/', views.delete_request_api, name='api_delete_request'),\n    # Agent stage APIs",
+        "peekOfCode": "urlpatterns = [\n    # Page views\n    path('', views.procurement_dashboard_view, name='dashboard'),\n    path('analysis/', views.analysis_view, name='analysis'),\n    # API views for creating requests\n    path('api/add-request/', views.add_request_api, name='api_add_request'),\n    path('api/bulk-upload/', views.bulk_upload_api, name='api_bulk_upload'),\n    # Main request details and action endpoints\n    path('api/get-request-details/<int:pk>/', views.get_request_details_api, name='api_get_request_details'),\n    path('api/get-product-quotes/<int:product_id>/', views.get_product_quotes_api, name='api_get_product_quotes'),",
         "detail": "AI_agent_center.procurement.urls",
         "documentation": {}
     },
@@ -2190,7 +2266,16 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.utils",
         "description": "AI_agent_center.procurement.utils",
-        "peekOfCode": "def get_ai_response(html_content, prompt):\n    \"\"\"\n    Sends a prompt and HTML content (optional) to the Gemini model and returns a parsed JSON response.\n    \"\"\"\n    if not model:\n        print(\"AI model is not configured. Returning None.\")\n        return None\n    full_prompt = f\"{prompt}\\n\\nHTML Content:\\n{html_content}\" if html_content else prompt\n    try:\n        response = model.generate_content(full_prompt, request_options={'timeout': 120})",
+        "peekOfCode": "def get_ai_response(prompt):\n    \"\"\"\n    Sends a prompt to the Gemini model and returns a parsed JSON response.\n    \"\"\"\n    if not model:\n        print(\"AI model is not configured. Returning None.\")\n        return None\n    try:\n        # Call the Gemini API\n        response = model.generate_content(prompt, request_options={'timeout': 120})",
+        "detail": "AI_agent_center.procurement.utils",
+        "documentation": {}
+    },
+    {
+        "label": "get_ai_benchmark_price",
+        "kind": 2,
+        "importPath": "AI_agent_center.procurement.utils",
+        "description": "AI_agent_center.procurement.utils",
+        "peekOfCode": "def get_ai_benchmark_price(product_name, specs):\n    \"\"\"\n    Asks the AI to estimate a fair market price for a product.\n    \"\"\"\n    if not model:\n        return None\n    prompt = (\n        f\"You are a procurement expert for the Indian market. Based on the following product details, \"\n        f\"provide an estimated fair market price for a single unit in Indian Rupees (INR). \"\n        f\"Your response MUST be a valid JSON object with a single key: 'estimated_price'. \"",
         "detail": "AI_agent_center.procurement.utils",
         "documentation": {}
     },
@@ -2199,7 +2284,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.utils",
         "description": "AI_agent_center.procurement.utils",
-        "peekOfCode": "def process_incoming_quotes():\n    \"\"\"\n    Connects to the IMAP server, finds all emails with the keyword 'quotation',\n    tries to match them to a specific request. If it fails, it creates a NEW,\n    vendor-specific request for that quote.\n    \"\"\"\n    new_quotes_found = 0\n    try:\n        mail = imaplib.IMAP4_SSL(settings.GMAIL_IMAP_HOST)\n        mail.login(settings.GMAIL_ADDRESS, settings.GMAIL_APP_PASSWORD)",
+        "peekOfCode": "def process_incoming_quotes():\n    \"\"\"\n    Independent agent function to process new incoming quotation emails.\n    Updated to:\n    - Handle emails with multiple line items correctly.\n    - Use a single, more robust AI prompt for parsing all items.\n    \"\"\"\n    new_quotes_found = 0\n    # --- STEP 0: Check IMAP configuration ---\n    if not all([settings.GMAIL_IMAP_HOST, settings.GMAIL_ADDRESS, settings.GMAIL_APP_PASSWORD]):",
         "detail": "AI_agent_center.procurement.utils",
         "documentation": {}
     },
@@ -2213,11 +2298,29 @@
         "documentation": {}
     },
     {
+        "label": "get_product_quotes_api",
+        "kind": 2,
+        "importPath": "AI_agent_center.procurement.views",
+        "description": "AI_agent_center.procurement.views",
+        "peekOfCode": "def get_product_quotes_api(request, product_id):\n    try:\n        product = Product.objects.get(id=product_id)\n        requests_for_product = ProcurementRequest.objects.filter(product=product, status__in=['quotes-received', 'rfqs-sent'])\n        quotes = Quote.objects.filter(procurement_request__in=requests_for_product).select_related('supplier', 'supplier__master_vendor')\n        representative_request = requests_for_product.first()\n        if not representative_request:\n             return JsonResponse({'error': 'No active requests found for this product'}, status=404)\n        data = {\n            'id': product.id,",
+        "detail": "AI_agent_center.procurement.views",
+        "documentation": {}
+    },
+    {
+        "label": "analysis_view",
+        "kind": 2,
+        "importPath": "AI_agent_center.procurement.views",
+        "description": "AI_agent_center.procurement.views",
+        "peekOfCode": "def analysis_view(request):\n    selected_product_id = request.GET.get('product')\n    finalized_requests = ProcurementRequest.objects.filter(status='finalized', selected_quote__isnull=False).select_related('selected_quote__supplier__master_vendor')\n    if selected_product_id:\n        finalized_requests = finalized_requests.filter(product_id=selected_product_id)\n    products_with_vendors = Product.objects.annotate(\n        vendor_count=Count('vendors')\n    ).filter(vendor_count__gt=0).prefetch_related('vendors').order_by('name')\n    if selected_product_id:\n        products_with_vendors = products_with_vendors.filter(id=selected_product_id)",
+        "detail": "AI_agent_center.procurement.views",
+        "documentation": {}
+    },
+    {
         "label": "add_request_api",
         "kind": 2,
         "importPath": "AI_agent_center.procurement.views",
         "description": "AI_agent_center.procurement.views",
-        "peekOfCode": "def add_request_api(request):\n    data = json.loads(request.body)\n    new_request = ProcurementRequest.objects.create(\n        title=data.get('title'), quantity=data.get('quantity'),\n        specs=data.get('specs'), source=data.get('source', 'Manual'), status='new-request'\n    )\n    return JsonResponse({'success': True, 'id': new_request.id})\n@require_POST\ndef bulk_upload_api(request):\n    if 'file' not in request.FILES: return redirect('procurement:dashboard')",
+        "peekOfCode": "def add_request_api(request):\n    data = json.loads(request.body)\n    product, _ = Product.objects.get_or_create(name=data.get('title'))\n    new_request = ProcurementRequest.objects.create(\n        title=data.get('title'),\n        product=product,\n        quantity=data.get('quantity'),\n        specs=data.get('specs'),\n        source=data.get('source', 'Manual'),\n        status='new-request'",
         "detail": "AI_agent_center.procurement.views",
         "documentation": {}
     },
@@ -2226,7 +2329,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.views",
         "description": "AI_agent_center.procurement.views",
-        "peekOfCode": "def bulk_upload_api(request):\n    if 'file' not in request.FILES: return redirect('procurement:dashboard')\n    uploaded_file = request.FILES['file']\n    existing_titles = set(ProcurementRequest.objects.values_list('title', flat=True))\n    new_requests = []\n    try:\n        if uploaded_file.name.endswith('.csv'):\n            decoded_file = uploaded_file.read().decode('utf-8').splitlines()\n            reader = csv.DictReader(decoded_file)\n            for row in reader:",
+        "peekOfCode": "def bulk_upload_api(request):\n    if 'file' not in request.FILES: return redirect('procurement:dashboard')\n    uploaded_file = request.FILES['file']\n    existing_titles = set(ProcurementRequest.objects.values_list('title', flat=True))\n    new_requests = []\n    try:\n        decoded_file = uploaded_file.read().decode('utf-8').splitlines()\n        reader = csv.DictReader(decoded_file)\n        for row in reader:\n            title = row.get('Product Title')",
         "detail": "AI_agent_center.procurement.views",
         "documentation": {}
     },
@@ -2249,11 +2352,20 @@
         "documentation": {}
     },
     {
+        "label": "find_more_suppliers_api",
+        "kind": 2,
+        "importPath": "AI_agent_center.procurement.views",
+        "description": "AI_agent_center.procurement.views",
+        "peekOfCode": "def find_more_suppliers_api(request, product_id):\n    try:\n        product = Product.objects.get(id=product_id)\n        # Find the most recent active request for this product to add new suppliers to\n        active_request = ProcurementRequest.objects.filter(\n            product=product, \n            status__in=['quotes-received', 'awaiting-approval', 'rfqs-sent']\n        ).order_by('-created_at').first()\n        if not active_request:\n            return JsonResponse({'error': 'No active request found for this product to add suppliers to.'}, status=404)",
+        "detail": "AI_agent_center.procurement.views",
+        "documentation": {}
+    },
+    {
         "label": "send_rfqs_api",
         "kind": 2,
         "importPath": "AI_agent_center.procurement.views",
         "description": "AI_agent_center.procurement.views",
-        "peekOfCode": "def send_rfqs_api(request, pk):\n    try:\n        req = ProcurementRequest.objects.get(pk=pk)\n        suppliers = req.suppliers.all()\n        if not suppliers.exists():\n            return JsonResponse({'error': 'No suppliers were found for this request.'}, status=400)\n        suppliers_with_email = suppliers.filter(email__isnull=False).exclude(email__exact='')\n        sent_via_email = 0\n        if suppliers_with_email.exists():\n            subject = f\"Request for Quotation - {req.title} [REQ-{req.id}]\"",
+        "peekOfCode": "def send_rfqs_api(request, pk):\n    try:\n        req = ProcurementRequest.objects.get(pk=pk)\n        suppliers = req.suppliers.all()\n        if not suppliers.exists():\n            return JsonResponse({'error': 'No suppliers were found for this request.'}, status=400)\n        attachment = request.FILES.get('attachment')\n        suppliers_with_email = suppliers.filter(email__isnull=False).exclude(email__exact='')\n        sent_via_email = 0\n        if suppliers_with_email.exists():",
         "detail": "AI_agent_center.procurement.views",
         "documentation": {}
     },
@@ -2262,7 +2374,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.views",
         "description": "AI_agent_center.procurement.views",
-        "peekOfCode": "def check_and_parse_quotes_api(request, pk):\n    # MODIFIED: यह एंडपॉइंट अब एक ग्लोबल स्कैन शुरू करता है। 'pk' का अब उपयोग नहीं किया जाता है।\n    try:\n        new_quotes = process_incoming_quotes()\n        return JsonResponse({'success': True, 'message': f'Global scan complete. Found {new_quotes} new quotes.', 'new_quotes_found': new_quotes})\n    except Exception as e:\n        return JsonResponse({'error': str(e)}, status=500)\n@csrf_exempt\n@require_POST\ndef check_all_rfqs_api(request):",
+        "peekOfCode": "def check_and_parse_quotes_api(request, pk):\n    try:\n        new_quotes = process_incoming_quotes()\n        return JsonResponse({'success': True, 'message': f'Global scan complete. Found {new_quotes} new quotes.', 'new_quotes_found': new_quotes})\n    except Exception as e:\n        return JsonResponse({'error': str(e)}, status=500)\n@csrf_exempt\n@require_POST\ndef check_all_rfqs_api(request):\n    try:",
         "detail": "AI_agent_center.procurement.views",
         "documentation": {}
     },
@@ -2271,7 +2383,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.views",
         "description": "AI_agent_center.procurement.views",
-        "peekOfCode": "def check_all_rfqs_api(request):\n    \"\"\"\n    MODIFIED: यह अब ग्लोबल, स्वतंत्र कोटेशन प्रोसेसिंग फंक्शन चलाता है।\n    \"\"\"\n    try:\n        new_quotes = process_incoming_quotes()\n        return JsonResponse({'success': True, 'total_new_quotes': new_quotes, 'message': f'Global scan complete. Found {new_quotes} new quotes.'})\n    except Exception as e:\n        return JsonResponse({'error': str(e)}, status=500)\n@csrf_exempt",
+        "peekOfCode": "def check_all_rfqs_api(request):\n    try:\n        new_quotes = process_incoming_quotes()\n        return JsonResponse({'success': True, 'total_new_quotes': new_quotes, 'message': f'Global scan complete. Found {new_quotes} new quotes.'})\n    except Exception as e:\n        return JsonResponse({'error': str(e)}, status=500)\n@csrf_exempt\n@require_POST\ndef finalize_request_api(request, pk):\n    try:",
         "detail": "AI_agent_center.procurement.views",
         "documentation": {}
     },
@@ -2280,7 +2392,7 @@
         "kind": 2,
         "importPath": "AI_agent_center.procurement.views",
         "description": "AI_agent_center.procurement.views",
-        "peekOfCode": "def finalize_request_api(request, pk):\n    try:\n        data = json.loads(request.body)\n        quote_id = data.get('quote_id')\n        proc_request = ProcurementRequest.objects.get(pk=pk)\n        selected_quote = Quote.objects.get(pk=quote_id)\n        all_quotes_for_request = Quote.objects.filter(procurement_request=proc_request, price__isnull=False)\n        average_price = all_quotes_for_request.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price\n        savings = average_price - selected_quote.price\n        total_savings = savings",
+        "peekOfCode": "def finalize_request_api(request, pk):\n    try:\n        data = json.loads(request.body)\n        quote_id = data.get('quote_id')\n        proc_request = ProcurementRequest.objects.get(pk=pk)\n        selected_quote = Quote.objects.get(pk=quote_id)\n        benchmark_price = Decimal('0.0')\n        benchmark_source = \"N/A\"\n        all_quotes_for_product = Quote.objects.filter(\n            procurement_request__product=proc_request.product,",
         "detail": "AI_agent_center.procurement.views",
         "documentation": {}
     },
@@ -2300,231 +2412,6 @@
         "description": "AI_agent_center.procurement.views",
         "peekOfCode": "def manual_rfq_sent_api(request, pk):\n    try:\n        req = ProcurementRequest.objects.get(pk=pk)\n        req.status = 'rfqs-sent'\n        req.total_quotes_sent = 1 \n        req.save()\n        return JsonResponse({'success': True})\n    except ProcurementRequest.DoesNotExist:\n        return JsonResponse({'error': 'Request not found'}, status=404)",
         "detail": "AI_agent_center.procurement.views",
-        "documentation": {}
-    },
-    {
-        "label": "pytesseract.pytesseract.tesseract_cmd",
-        "kind": 5,
-        "importPath": "AI_agent_center.procurement.views",
-        "description": "AI_agent_center.procurement.views",
-        "peekOfCode": "pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'\ndef procurement_dashboard_view(request):\n    total_savings = ProcurementRequest.objects.filter(status='finalized').aggregate(total=Sum('estimated_savings'))['total'] or 0\n    time_saved_sourcing = ProcurementRequest.objects.filter(status__in=['awaiting-approval', 'rfqs-sent', 'quotes-received', 'finalized']).count() * 0.5\n    time_saved_rfqs = ProcurementRequest.objects.filter(status__in=['rfqs-sent', 'quotes-received', 'finalized']).count() * 0.75\n    time_saved_parsing = Quote.objects.count() * 0.25\n    total_time_saved = time_saved_sourcing + time_saved_rfqs + time_saved_parsing\n    market_alert = \"Market data currently unavailable.\"\n    try:\n        response = requests.get(\"https://api.nbp.pl/api/cenyzlota\", timeout=5)",
-        "detail": "AI_agent_center.procurement.views",
-        "documentation": {}
-    },
-    {
-        "label": "ShortsAppConfig",
-        "kind": 6,
-        "importPath": "AI_agent_center.shorts_app.apps",
-        "description": "AI_agent_center.shorts_app.apps",
-        "peekOfCode": "class ShortsAppConfig(AppConfig):\n    default_auto_field = 'django.db.models.BigAutoField'\n    name = 'shorts_app'",
-        "detail": "AI_agent_center.shorts_app.apps",
-        "documentation": {}
-    },
-    {
-        "label": "DownloadedVideo",
-        "kind": 6,
-        "importPath": "AI_agent_center.shorts_app.models",
-        "description": "AI_agent_center.shorts_app.models",
-        "peekOfCode": "class DownloadedVideo(models.Model):\n    video_id = models.CharField(max_length=20, unique=True, primary_key=True)\n    title = models.CharField(max_length=255)\n    duration = models.IntegerField()\n    file_path = models.CharField(max_length=512)\n    thumbnail_path = models.CharField(max_length=512, null=True, blank=True)\n    suggestions = models.JSONField(null=True, blank=True)\n    created_at = models.DateTimeField(auto_now_add=True)\n    def __str__(self):\n        return self.title",
-        "detail": "AI_agent_center.shorts_app.models",
-        "documentation": {}
-    },
-    {
-        "label": "GeneratedShort",
-        "kind": 6,
-        "importPath": "AI_agent_center.shorts_app.models",
-        "description": "AI_agent_center.shorts_app.models",
-        "peekOfCode": "class GeneratedShort(models.Model):\n    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)\n    parent_video = models.ForeignKey(DownloadedVideo, on_delete=models.CASCADE, related_name='shorts')\n    title = models.CharField(max_length=255)\n    description = models.TextField(blank=True)\n    tags = models.JSONField(default=list)\n    short_path = models.CharField(max_length=512)\n    thumbnail_path = models.CharField(max_length=512)\n    start_time = models.CharField(max_length=12)\n    end_time = models.CharField(max_length=12)",
-        "detail": "AI_agent_center.shorts_app.models",
-        "documentation": {}
-    },
-    {
-        "label": "app_name",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.urls",
-        "description": "AI_agent_center.shorts_app.urls",
-        "peekOfCode": "app_name = 'shorts_app'\nurlpatterns = [\n    # Main page\n    path('', views.index, name='index'),\n    # Background task and video processing URLs\n    path('process_video/', views.process_video, name='process_video'),\n    # This is the corrected line that fixes the 404 error\n    path('check_progress/<uuid:task_id>/', views.check_progress, name='check_progress'),\n    # Short generation and management URLs\n    path('generate_short/', views.generate_short, name='generate_short'),",
-        "detail": "AI_agent_center.shorts_app.urls",
-        "documentation": {}
-    },
-    {
-        "label": "urlpatterns",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.urls",
-        "description": "AI_agent_center.shorts_app.urls",
-        "peekOfCode": "urlpatterns = [\n    # Main page\n    path('', views.index, name='index'),\n    # Background task and video processing URLs\n    path('process_video/', views.process_video, name='process_video'),\n    # This is the corrected line that fixes the 404 error\n    path('check_progress/<uuid:task_id>/', views.check_progress, name='check_progress'),\n    # Short generation and management URLs\n    path('generate_short/', views.generate_short, name='generate_short'),\n    path('download_short/<str:filename>/', views.download_short, name='download_short'),",
-        "detail": "AI_agent_center.shorts_app.urls",
-        "documentation": {}
-    },
-    {
-        "label": "get_ai_suggested_clips",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def get_ai_suggested_clips(transcript: str, video_duration: int):\n    # This function remains unchanged\n    if not genai_configured or not genai: return []\n    model = genai.GenerativeModel('gemini-1.5-flash')\n    prompt = f\"\"\"\n    You are an expert video editor and viral content strategist.\n    Analyze the following transcript (total video duration: {video_duration} seconds) and identify up to 3 compelling segments for short videos (30-90 seconds).\n    For each clip, provide:\n    1.  `start_time`: In \"MM:SS\" format.\n    2.  `end_time`: In \"MM:SS\" format.",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "get_youtube_id",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def get_youtube_id(url):\n    # This function remains unchanged\n    if not url: return None\n    query = urlparse(url)\n    if query.hostname in ('www.youtube.com', 'youtube.com'):\n        if query.path == '/watch': return parse_qs(query.query).get('v', [None])[0]\n        if query.path.startswith(('/embed/', '/v/')): return query.path.split('/')[2]\n    if query.hostname == 'youtu.be': return query.path[1:]\n    return None\ndef index(request):",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "index",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def index(request):\n    processed_videos = DownloadedVideo.objects.all().order_by('-created_at')\n    generated_shorts = GeneratedShort.objects.select_related('parent_video').order_by('-created_at')\n    return render(request, 'shorts_app/index.html', {'videos': processed_videos, 'shorts': generated_shorts})\ndef check_progress(request, task_id):\n    return JsonResponse(cache.get(task_id, {\"status\": \"PENDING\", \"progress\": 0, \"message\": \"Initializing...\"}))\ndef process_video(request):\n    if request.method != 'POST':\n        return JsonResponse({'status': 'error', 'message': 'Invalid request.'})\n    try:",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "check_progress",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def check_progress(request, task_id):\n    return JsonResponse(cache.get(task_id, {\"status\": \"PENDING\", \"progress\": 0, \"message\": \"Initializing...\"}))\ndef process_video(request):\n    if request.method != 'POST':\n        return JsonResponse({'status': 'error', 'message': 'Invalid request.'})\n    try:\n        # This correctly reads the JSON data sent by the updated JavaScript\n        data = json.loads(request.body)\n        video_url = data.get('video_url')\n        video_id = data.get('video_id') or get_youtube_id(video_url)",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "process_video",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def process_video(request):\n    if request.method != 'POST':\n        return JsonResponse({'status': 'error', 'message': 'Invalid request.'})\n    try:\n        # This correctly reads the JSON data sent by the updated JavaScript\n        data = json.loads(request.body)\n        video_url = data.get('video_url')\n        video_id = data.get('video_id') or get_youtube_id(video_url)\n    except json.JSONDecodeError:\n        return JsonResponse({'status': 'error', 'message': 'Invalid JSON data.'}, status=400)",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "long_running_task",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def long_running_task(video_id, video_url, task_id):\n    \"\"\"\n    This function runs in a background thread to handle the heavy lifting of\n    downloading the video and its assets using yt-dlp.\n    \"\"\"\n    def progress_hook(d):\n        \"\"\"A hook for yt-dlp to report download progress.\"\"\"\n        if d['status'] == 'downloading':\n            # Extract percentage and format a message\n            progress_percent = d.get('_percent_str', '0%').strip()",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "generate_short",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def generate_short(request):\n    if request.method != 'POST': return JsonResponse({'status': 'error', 'message': 'Invalid request method.'})\n    try:\n        data = json.loads(request.body)\n        video_id, clip_data, aspect_ratio = data.get('video_id'), data.get('clip_data', {}), data.get('aspect_ratio',\n                                                                                                      '9:16')\n        start_time_str, end_time_str = clip_data.get('start_time'), clip_data.get('end_time')\n        parent_video = get_object_or_404(DownloadedVideo, video_id=video_id)\n        video_full_path = os.path.join(settings.BASE_DIR, parent_video.file_path.lstrip('/'))\n        def time_to_seconds(t):",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "get_trending_videos",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def get_trending_videos(request):\n    topic = request.GET.get('topic', '').strip()\n    page_token = request.GET.get('pageToken', '').strip() # New: Get pageToken from request\n    api_key = getattr(settings, 'YOUTUBE_API_KEY', None)\n    if not api_key:\n        logger.error(\"YOUTUBE_API_KEY is not set in settings.py\")\n        return JsonResponse({'status': 'error', 'message': 'YouTube API key not configured.'}, status=500)\n    try:\n        youtube = googleapiclient.discovery.build(\"youtube\", \"v3\", developerKey=api_key)\n        videos = []",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "delete_video",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def delete_video(request, video_id):\n    if request.method == 'POST':\n        video = get_object_or_404(DownloadedVideo, video_id=video_id)\n        _delete_files([video.file_path, video.thumbnail_path, f'/media/videos/{video.video_id}.en.vtt'])\n        video.delete()\n        return JsonResponse({'status': 'success'})\n    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)\ndef delete_short(request, short_id):\n    if request.method == 'POST':\n        short = get_object_or_404(GeneratedShort, id=short_id)",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "delete_short",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def delete_short(request, short_id):\n    if request.method == 'POST':\n        short = get_object_or_404(GeneratedShort, id=short_id)\n        _delete_files([short.short_path, short.thumbnail_path])\n        short.delete()\n        return JsonResponse({'status': 'success'})\n    return JsonResponse({'status': 'error', 'message': 'Invalid request method.'}, status=405)\ndef download_short(request, filename):\n    short_path = os.path.join(settings.MEDIA_ROOT, 'shorts', filename)\n    if os.path.exists(short_path): return FileResponse(open(short_path, 'rb'), as_attachment=True, filename=filename)",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "download_short",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "def download_short(request, filename):\n    short_path = os.path.join(settings.MEDIA_ROOT, 'shorts', filename)\n    if os.path.exists(short_path): return FileResponse(open(short_path, 'rb'), as_attachment=True, filename=filename)\n    raise Http404(\"File not found\")",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "logger",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "logger = logging.getLogger(__name__)\n# --- Configure Gemini (Unchanged) ---\ngenai_configured = False\ntry:\n    if settings.GEMINI_API_KEY:\n        genai.configure(api_key=settings.GEMINI_API_KEY)\n        genai_configured = True\n    else:\n        logger.error(\"GEMINI_API_KEY not set. AI features disabled.\")\nexcept Exception as e:",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "genai_configured",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.views",
-        "description": "AI_agent_center.shorts_app.views",
-        "peekOfCode": "genai_configured = False\ntry:\n    if settings.GEMINI_API_KEY:\n        genai.configure(api_key=settings.GEMINI_API_KEY)\n        genai_configured = True\n    else:\n        logger.error(\"GEMINI_API_KEY not set. AI features disabled.\")\nexcept Exception as e:\n    logger.error(f\"Error during Gemini configuration: {e}. AI features disabled.\")\n    genai = None",
-        "detail": "AI_agent_center.shorts_app.views",
-        "documentation": {}
-    },
-    {
-        "label": "get_authenticated_service",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.youtube_uploader",
-        "description": "AI_agent_center.shorts_app.youtube_uploader",
-        "peekOfCode": "def get_authenticated_service():\n    credentials = None\n    # The file token.pickle stores the user's access and refresh tokens, and is\n    # created automatically when the authorization flow completes for the first time.\n    if os.path.exists('token.pickle'):\n        with open('token.pickle', 'rb') as token:\n            credentials = pickle.load(token)\n    # If there are no (valid) credentials available, let the user log in.\n    if not credentials or not credentials.valid:\n        if credentials and credentials.expired and credentials.refresh_token:",
-        "detail": "AI_agent_center.shorts_app.youtube_uploader",
-        "documentation": {}
-    },
-    {
-        "label": "upload_video",
-        "kind": 2,
-        "importPath": "AI_agent_center.shorts_app.youtube_uploader",
-        "description": "AI_agent_center.shorts_app.youtube_uploader",
-        "peekOfCode": "def upload_video(file_path, title, description, tags, privacy_status=\"private\"):\n    youtube = get_authenticated_service()\n    body = {\n        'snippet': {\n            'title': title,\n            'description': description,\n            'tags': tags,\n            'categoryId': '22'  # Default to 'People & Blogs'. See API docs for other categories.\n        },\n        'status': {",
-        "detail": "AI_agent_center.shorts_app.youtube_uploader",
-        "documentation": {}
-    },
-    {
-        "label": "CLIENT_SECRETS_FILE",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.youtube_uploader",
-        "description": "AI_agent_center.shorts_app.youtube_uploader",
-        "peekOfCode": "CLIENT_SECRETS_FILE = \"client_secret.json\"\nAPI_NAME = 'youtube'\nAPI_VERSION = 'v3'\nSCOPES = ['https://www.googleapis.com/auth/youtube.upload']\ndef get_authenticated_service():\n    credentials = None\n    # The file token.pickle stores the user's access and refresh tokens, and is\n    # created automatically when the authorization flow completes for the first time.\n    if os.path.exists('token.pickle'):\n        with open('token.pickle', 'rb') as token:",
-        "detail": "AI_agent_center.shorts_app.youtube_uploader",
-        "documentation": {}
-    },
-    {
-        "label": "API_NAME",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.youtube_uploader",
-        "description": "AI_agent_center.shorts_app.youtube_uploader",
-        "peekOfCode": "API_NAME = 'youtube'\nAPI_VERSION = 'v3'\nSCOPES = ['https://www.googleapis.com/auth/youtube.upload']\ndef get_authenticated_service():\n    credentials = None\n    # The file token.pickle stores the user's access and refresh tokens, and is\n    # created automatically when the authorization flow completes for the first time.\n    if os.path.exists('token.pickle'):\n        with open('token.pickle', 'rb') as token:\n            credentials = pickle.load(token)",
-        "detail": "AI_agent_center.shorts_app.youtube_uploader",
-        "documentation": {}
-    },
-    {
-        "label": "API_VERSION",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.youtube_uploader",
-        "description": "AI_agent_center.shorts_app.youtube_uploader",
-        "peekOfCode": "API_VERSION = 'v3'\nSCOPES = ['https://www.googleapis.com/auth/youtube.upload']\ndef get_authenticated_service():\n    credentials = None\n    # The file token.pickle stores the user's access and refresh tokens, and is\n    # created automatically when the authorization flow completes for the first time.\n    if os.path.exists('token.pickle'):\n        with open('token.pickle', 'rb') as token:\n            credentials = pickle.load(token)\n    # If there are no (valid) credentials available, let the user log in.",
-        "detail": "AI_agent_center.shorts_app.youtube_uploader",
-        "documentation": {}
-    },
-    {
-        "label": "SCOPES",
-        "kind": 5,
-        "importPath": "AI_agent_center.shorts_app.youtube_uploader",
-        "description": "AI_agent_center.shorts_app.youtube_uploader",
-        "peekOfCode": "SCOPES = ['https://www.googleapis.com/auth/youtube.upload']\ndef get_authenticated_service():\n    credentials = None\n    # The file token.pickle stores the user's access and refresh tokens, and is\n    # created automatically when the authorization flow completes for the first time.\n    if os.path.exists('token.pickle'):\n        with open('token.pickle', 'rb') as token:\n            credentials = pickle.load(token)\n    # If there are no (valid) credentials available, let the user log in.\n    if not credentials or not credentials.valid:",
-        "detail": "AI_agent_center.shorts_app.youtube_uploader",
         "documentation": {}
     },
     {
@@ -2645,51 +2532,6 @@
         "documentation": {}
     },
     {
-        "label": "main",
-        "kind": 2,
-        "importPath": "AI_agent_center.venv.Scripts.log2design",
-        "description": "AI_agent_center.venv.Scripts.log2design",
-        "peekOfCode": "def main(args):\n    runs_df = load_onsets(args.onsets_files, args)\n    print(\"Saving designfile (%d rows) to %s\" % (runs_df.shape[0], args.out))\n    runs_df.to_csv(args.out, index=False)\ndef load_onsets(onsets_files, args):\n    \"\"\"Read onsets file and add metadata from their filenames.\n    Return one concatenated pandas dataframe with all trials as rows.\"\"\"\n    runs = []\n    for i, fid in enumerate(onsets_files):\n        run = read_csv(fid)",
-        "detail": "AI_agent_center.venv.Scripts.log2design",
-        "documentation": {}
-    },
-    {
-        "label": "load_onsets",
-        "kind": 2,
-        "importPath": "AI_agent_center.venv.Scripts.log2design",
-        "description": "AI_agent_center.venv.Scripts.log2design",
-        "peekOfCode": "def load_onsets(onsets_files, args):\n    \"\"\"Read onsets file and add metadata from their filenames.\n    Return one concatenated pandas dataframe with all trials as rows.\"\"\"\n    runs = []\n    for i, fid in enumerate(onsets_files):\n        run = read_csv(fid)\n        # If any column arguments were given, convert to a lyman-like design\n        # with explicitly named columns. Else, just concatenate and add 'run'.\n        if (args.onset_col or args.duration_col or args.condition_col or\n                args.pmods_col):",
-        "detail": "AI_agent_center.venv.Scripts.log2design",
-        "documentation": {}
-    },
-    {
-        "label": "rename_columns",
-        "kind": 2,
-        "importPath": "AI_agent_center.venv.Scripts.log2design",
-        "description": "AI_agent_center.venv.Scripts.log2design",
-        "peekOfCode": "def rename_columns(args, run):\n    cols = ['run', 'onset', 'duration', 'condition']\n    # Cleanup any columns that might exist if we don't want them\n    if args.drop_cols:\n        for col in cols:\n            if col in run.columns:\n                run.drop(col, axis=1, inplace=True)\n    columns = {}\n    columns[args.onset_col] = 'onset'\n    columns[args.condition_col] = 'condition'",
-        "detail": "AI_agent_center.venv.Scripts.log2design",
-        "documentation": {}
-    },
-    {
-        "label": "onsets_for",
-        "kind": 2,
-        "importPath": "AI_agent_center.venv.Scripts.log2design",
-        "description": "AI_agent_center.venv.Scripts.log2design",
-        "peekOfCode": "def onsets_for(cond, run_df):\n    \"\"\"\n    Inputs:\n      * Condition Label to grab onsets, durations & amplitudes for.\n      * Pandas Dataframe for current run containing onsets values as columns.\n    Outputs:\n      * Returns a dictionary of extracted values for onsets, durations, etc.\n      * Returns None if there are no onsets.\n    \"\"\"\n    condinfo = {}",
-        "detail": "AI_agent_center.venv.Scripts.log2design",
-        "documentation": {}
-    },
-    {
-        "label": "parse_args",
-        "kind": 2,
-        "importPath": "AI_agent_center.venv.Scripts.log2design",
-        "description": "AI_agent_center.venv.Scripts.log2design",
-        "peekOfCode": "def parse_args():\n    parser = ArgumentParser()\n    parser.add_argument('onsets_files', type=FileType('r'),\n                        help='List of FSL EV onsets to convert', nargs='+')\n    parser.add_argument('--out',   '-o', default='onsets_',\n                        help='Output filename.')\n    parser.add_argument('--verbose',      '-v', action=\"count\",\n                        help=\"increase output verbosity\")\n    parser.add_argument('--pmod-name', default='pmod',\n                        help='Name to use when writing FSL Amplitude as SPM '",
-        "detail": "AI_agent_center.venv.Scripts.log2design",
-        "documentation": {}
-    },
-    {
         "label": "float_or_disabled",
         "kind": 2,
         "importPath": "AI_agent_center.venv.Scripts.pdf2txt",
@@ -2741,6 +2583,24 @@
         "description": "AI_agent_center.venv.Scripts.pdf2txt",
         "peekOfCode": "OUTPUT_TYPES = ((\".htm\", \"html\"), (\".html\", \"html\"), (\".xml\", \"xml\"), (\".tag\", \"tag\"))\ndef float_or_disabled(x: str) -> Optional[float]:\n    if x.lower().strip() == \"disabled\":\n        return None\n    try:\n        return float(x)\n    except ValueError:\n        raise argparse.ArgumentTypeError(\"invalid float value: {}\".format(x))\ndef extract_text(\n    files: Iterable[str] = [],",
         "detail": "AI_agent_center.venv.Scripts.pdf2txt",
+        "documentation": {}
+    },
+    {
+        "label": "cmd_doc",
+        "kind": 5,
+        "importPath": "AI_agent_center.venv.Scripts.runxlrd",
+        "description": "AI_agent_center.venv.Scripts.runxlrd",
+        "peekOfCode": "cmd_doc = \"\"\"\nCommands:\n2rows           Print the contents of first and last row in each sheet\n3rows           Print the contents of first, second and last row in each sheet\nbench           Same as \"show\", but doesn't print -- for profiling\nbiff_count[1]   Print a count of each type of BIFF record in the file\nbiff_dump[1]    Print a dump (char and hex) of the BIFF records in the file\nfonts           hdr + print a dump of all font objects\nhdr             Mini-overview of file (no per-sheet information)\nhotshot         Do a hotshot profile run e.g. ... -f1 hotshot bench bigfile*.xls",
+        "detail": "AI_agent_center.venv.Scripts.runxlrd",
+        "documentation": {}
+    },
+    {
+        "label": "options",
+        "kind": 5,
+        "importPath": "AI_agent_center.venv.Scripts.runxlrd",
+        "description": "AI_agent_center.venv.Scripts.runxlrd",
+        "peekOfCode": "options = None\nif __name__ == \"__main__\":\n    import xlrd\n    import sys\n    import time\n    import glob\n    import traceback\n    import gc\n    from xlrd.timemachine import xrange, REPR\n    class LogHandler(object):",
+        "detail": "AI_agent_center.venv.Scripts.runxlrd",
         "documentation": {}
     },
     {

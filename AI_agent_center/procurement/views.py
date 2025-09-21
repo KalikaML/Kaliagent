@@ -1,31 +1,21 @@
 import json
-import imaplib
-import email
-from email.header import decode_header
-import csv
 import re
-import requests
 import threading
-import fitz
-import io
 import sys
 import subprocess
-import pytesseract
-from PIL import Image
+from decimal import Decimal
+import requests
 
-from urllib.parse import urlparse
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from django.core.mail import send_mail, EmailMessage
-from django.db.models import Sum, Avg, Count, OuterRef, Subquery
+from django.core.mail import EmailMessage, send_mail
+from django.db.models import Sum, Avg, Count
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
-from .utils import get_ai_response, process_incoming_quotes
-
-# This setting may be required for some systems, e.g., Windows
-# pytesseract.pytesseract.tesseract_cmd = r'C:/Program Files/Tesseract-OCR/tesseract.exe'
+# 🔄 MODIFIED: Import the new benchmark function and other utils
+from .utils import process_incoming_quotes, get_ai_benchmark_price, get_ai_response
 
 def procurement_dashboard_view(request):
     total_savings = ProcurementRequest.objects.filter(status='finalized').aggregate(total=Sum('estimated_savings'))['total'] or 0
@@ -41,6 +31,7 @@ def procurement_dashboard_view(request):
     except requests.RequestException:
         print("Could not fetch market data.")
 
+
     columns_data = [
         {'id': 'new-request', 'title': '📝 New Request', 'color': 'border-sky-500'},
         {'id': 'agent-working', 'title': '🤖 Agent Working', 'color': 'border-amber-500'},
@@ -53,21 +44,17 @@ def procurement_dashboard_view(request):
     all_requests = ProcurementRequest.objects.all().order_by('-created_at')
     
     for column in columns_data:
-        # 🔄 MODIFIED: Logic updated for the 'quotes-received' column to group by product.
         if column['id'] == 'quotes-received':
-            # Get products that have requests in 'quotes-received' status
             products_in_stage = Product.objects.filter(
                 procurementrequest__status='quotes-received'
             ).distinct().annotate(
-                # Count all quotes across all requests for this product
                 quote_count=Count('procurementrequest__quotes')
             )
             column['products'] = products_in_stage
-            column['requests'] = [] # Ensure this is empty for the new logic
+            column['requests'] = []
         else:
-            # Original logic for all other columns
             column['requests'] = [req for req in all_requests if req.status == column['id']]
-            column['products'] = [] # Ensure this is empty
+            column['products'] = []
 
     context = {
         'columns': columns_data, 'total_savings': total_savings,
@@ -75,31 +62,43 @@ def procurement_dashboard_view(request):
     }
     return render(request, 'procurement/dashboard.html', context)
 
-# ✨ NEW: API View to get all quotes for a specific Product ID
+
 def get_product_quotes_api(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
-        # Find all requests for this product that are in the 'quotes-received' stage
-        requests_for_product = ProcurementRequest.objects.filter(product=product, status='quotes-received')
-        
-        # Aggregate all quotes and related suppliers from these requests
+        requests_for_product = ProcurementRequest.objects.filter(product=product, status__in=['quotes-received', 'rfqs-sent'])
         quotes = Quote.objects.filter(procurement_request__in=requests_for_product).select_related('supplier', 'supplier__master_vendor')
-        
-        # We need a representative request to pass to the finalize API. We pick the first one.
         representative_request = requests_for_product.first()
         if not representative_request:
              return JsonResponse({'error': 'No active requests found for this product'}, status=404)
 
         data = {
             'id': product.id,
-            'title': product.name, # Use product name as title
+            'title': product.name,
             'representative_request_id': representative_request.id,
-            'quantity': representative_request.quantity, # Show quantity from a sample request
-            'specs': representative_request.specs, # Show specs from a sample request
-            'status': 'quotes-received', # The status is implicitly this
+            'quantity': representative_request.quantity,
+            'specs': representative_request.specs,
+            'status': 'quotes-received',
             'quotes': list(quotes.values('id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 'full_email_body')),
             'suppliers': list(Supplier.objects.filter(procurement_request__in=requests_for_product).distinct().values('name', 'email', 'phone')),
+            'benchmark_price': None, # ✨ NEW
+            'benchmark_source': None, # ✨ NEW
         }
+
+        if quotes.count() == 1:
+            historical_avg = ProcurementRequest.objects.filter(
+                product=product, status='finalized', selected_quote__price__isnull=False
+            ).aggregate(avg_price=Avg('selected_quote__price'))['avg_price']
+
+            if historical_avg:
+                data['benchmark_price'] = float(historical_avg)
+                data['benchmark_source'] = "Historical Average Price"
+            else:
+                ai_price = get_ai_benchmark_price(product.name, representative_request.specs)
+                if ai_price:
+                    data['benchmark_price'] = ai_price
+                    data['benchmark_source'] = "AI Estimated Market Price"
+        
         return JsonResponse(data)
     except Product.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
@@ -207,6 +206,40 @@ def find_suppliers_api(request, pk):
     except ProcurementRequest.DoesNotExist:
         return JsonResponse({'error': 'Request not found'}, status=404)
 
+# ✨ NEW: API View to re-run the sourcing agent for a specific product
+@csrf_exempt
+@require_POST
+def find_more_suppliers_api(request, product_id):
+    try:
+        product = Product.objects.get(id=product_id)
+        # Find the most recent active request for this product to add new suppliers to
+        active_request = ProcurementRequest.objects.filter(
+            product=product, 
+            status__in=['quotes-received', 'awaiting-approval', 'rfqs-sent']
+        ).order_by('-created_at').first()
+
+        if not active_request:
+            return JsonResponse({'error': 'No active request found for this product to add suppliers to.'}, status=404)
+        
+        # Set status to 'agent-working' to provide visual feedback on the dashboard
+        active_request.status = 'agent-working'
+        active_request.save()
+
+        # Re-use the existing scraper command in a background thread
+        def run_scraper_in_thread():
+            command = [sys.executable, 'manage.py', 'scrape_suppliers', str(active_request.id)]
+            subprocess.run(command)
+        
+        thread = threading.Thread(target=run_scraper_in_thread)
+        thread.start()
+        
+        return JsonResponse({'success': True, 'message': 'Agent has started searching for more suppliers in the background.'})
+    except Product.DoesNotExist:
+        return JsonResponse({'error': 'Product not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 @csrf_exempt
 @require_POST
 def send_rfqs_api(request, pk):
@@ -266,8 +299,6 @@ def send_rfqs_api(request, pk):
 @require_POST
 def check_and_parse_quotes_api(request, pk):
     try:
-        # This function can remain as it is, as it processes all unseen emails globally.
-        # The logic in utils.py correctly identifies the product and creates/links the quote.
         new_quotes = process_incoming_quotes()
         return JsonResponse({'success': True, 'message': f'Global scan complete. Found {new_quotes} new quotes.', 'new_quotes_found': new_quotes})
     except Exception as e:
@@ -289,38 +320,54 @@ def finalize_request_api(request, pk):
     try:
         data = json.loads(request.body)
         quote_id = data.get('quote_id')
-        
-        # The 'pk' here is the representative request ID
         proc_request = ProcurementRequest.objects.get(pk=pk)
         selected_quote = Quote.objects.get(pk=quote_id)
+        
+        benchmark_price = Decimal('0.0')
+        benchmark_source = "N/A"
 
-        # Get all quotes for the same PRODUCT, not just the single request
         all_quotes_for_product = Quote.objects.filter(
             procurement_request__product=proc_request.product,
             price__isnull=False
         )
-        average_price = all_quotes_for_product.aggregate(avg_price=Avg('price'))['avg_price'] or selected_quote.price
 
-        savings = average_price - selected_quote.price
+        if all_quotes_for_product.count() > 1:
+            avg_price = all_quotes_for_product.exclude(id=selected_quote.id).aggregate(avg_price=Avg('price'))['avg_price']
+            benchmark_price = avg_price or selected_quote.price
+            benchmark_source = "Multi-Quote Average"
+        else:
+            historical_avg = ProcurementRequest.objects.filter(
+                product=proc_request.product, status='finalized', selected_quote__price__isnull=False
+            ).aggregate(avg_price=Avg('selected_quote__price'))['avg_price']
+            
+            if historical_avg:
+                benchmark_price = historical_avg
+                benchmark_source = "Historical Average"
+            else:
+                ai_price = get_ai_benchmark_price(proc_request.product.name, proc_request.specs)
+                if ai_price:
+                    benchmark_price = Decimal(ai_price)
+                    benchmark_source = "AI Estimate"
+                else:
+                    benchmark_price = selected_quote.price
+                    benchmark_source = "Manual (No Benchmark)"
+
+        savings = benchmark_price - selected_quote.price
         total_savings = savings
-
         try:
             quantity_val = int(re.search(r'\d+', proc_request.quantity).group())
             total_savings = savings * quantity_val
         except (ValueError, AttributeError, TypeError):
-            print(f"Could not parse quantity '{proc_request.quantity}'. Using per-unit savings.")
+            pass
 
-        # Update the representative request
         proc_request.status = 'finalized'
         proc_request.selected_quote = selected_quote
         proc_request.estimated_savings = total_savings
+        proc_request.benchmark_source = benchmark_source
         proc_request.save()
 
-        # 🔄 MODIFIED: Update all other open requests for the same product to 'finalized' as well.
-        # This cleans up the Kanban board.
         ProcurementRequest.objects.filter(
-            product=proc_request.product, 
-            status='quotes-received'
+            product=proc_request.product, status='quotes-received'
         ).exclude(id=proc_request.id).update(status='finalized')
 
 

@@ -45,7 +45,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.checkAllQuotesBtn.addEventListener('click', () => this.runCheckAllRfqs());
             }
 
-            // 🔄 MODIFIED: Event listener to handle both request and product cards.
             this.kanbanBoard.addEventListener('click', (e) => {
                 const card = e.target.closest('.kanban-card');
                 const deleteBtn = e.target.closest('.delete-request-btn');
@@ -63,7 +62,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (requestId) {
                         this.openDrillDownModal(requestId);
                     } else if (productId) {
-                        // ✨ NEW: Handle click on a product card
                         this.openProductQuotesModal(productId);
                     }
                 }
@@ -76,12 +74,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 if (e.target.matches('.finalize-request-btn')) {
                     const quoteId = e.target.dataset.quoteId;
-                    // 🔄 MODIFIED: Pass the representative_request_id for finalization
                     const representativeId = this.currentRequestData.representative_request_id || this.currentRequestData.id;
                     this.runFinalizeRequest(representativeId, quoteId);
                 }
                 if (e.target.matches('#manual-rfq-btn')) {
                     this.runManualRfq(this.currentRequestData);
+                }
+                if (e.target.matches('#approve-rfq-btn')) {
+                    this.runRfqSend(this.currentRequestData);
+                }
+                if (e.target.matches('#find-more-suppliers-btn')) {
+                    const productId = e.target.dataset.productId;
+                    this.runFindMoreSuppliers(productId, e.target);
                 }
             });
         },
@@ -97,7 +101,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         },
         
-        // ✨ NEW: Function to open the product-centric quote comparison modal
         async openProductQuotesModal(productId) {
             if (this.pollingInterval) clearInterval(this.pollingInterval);
             this.currentLogMessages = [];
@@ -147,6 +150,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (request.status === 'new-request') this.runSupplierSearch(request);
             if (request.status === 'rfqs-sent') this.runQuoteCheck(request);
+        },
+        
+        async runFindMoreSuppliers(productId, buttonElement) {
+            if (!confirm('This will re-run the sourcing agent to find more suppliers for this product. The request will move to the "Agent Working" column. Continue?')) {
+                return;
+            }
+
+            buttonElement.textContent = 'Searching...';
+            buttonElement.disabled = true;
+
+            const response = await fetch(`/procurement/api/find-more-suppliers/${productId}/`, {
+                method: 'POST',
+                headers: { 'X-CSRFToken': this.csrfToken },
+            });
+            const data = await response.json();
+
+            if (data.success) {
+                alert('Agent has started searching for more suppliers. The page will now reload to reflect the status change.');
+                window.location.reload();
+            } else {
+                alert(`Error: ${data.error || 'Could not start the agent.'}`);
+                buttonElement.textContent = '+ Find More Suppliers';
+                buttonElement.disabled = false;
+            }
         },
 
         async runSupplierSearch(request) {
@@ -359,29 +386,18 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         generateModalContent(request) {
-            // This function now handles both 'request' and 'product' data structures
             const isProductView = !!request.representative_request_id;
             
             let briefingPanel;
 
-            // The briefing panel changes based on whether we are viewing a single request or a product group
             if (isProductView) {
                 briefingPanel = `
                 <div class="bg-slate-900 p-6 rounded-lg">
                     <h3 class="text-xl font-bold mb-4">📝 Product Briefing</h3>
                     <div class="space-y-3">
-                        <div>
-                            <label class="text-sm text-slate-400">Product</label>
-                            <p class="font-semibold text-lg">${request.title}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-slate-400">Sample Quantity</label>
-                            <p class="font-semibold text-lg">${request.quantity}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-slate-400">Sample Specifications</label>
-                            <p class="text-slate-300">${request.specs || 'N/A'}</p>
-                        </div>
+                        <div><label class="text-sm text-slate-400">Product</label><p class="font-semibold text-lg">${request.title}</p></div>
+                        <div><label class="text-sm text-slate-400">Sample Quantity</label><p class="font-semibold text-lg">${request.quantity}</p></div>
+                        <div><label class="text-sm text-slate-400">Sample Specifications</label><p class="text-slate-300">${request.specs || 'N/A'}</p></div>
                     </div>
                 </div>`;
             } else {
@@ -389,18 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="bg-slate-900 p-6 rounded-lg">
                     <h3 class="text-xl font-bold mb-4">📝 The Briefing</h3>
                     <div class="space-y-3">
-                        <div>
-                            <label class="text-sm text-slate-400">Product</label>
-                            <p class="font-semibold text-lg">${request.title}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-slate-400">Quantity</label>
-                            <p class="font-semibold text-lg">${request.quantity}</p>
-                        </div>
-                        <div>
-                            <label class="text-sm text-slate-400">Specifications</label>
-                            <p class="text-slate-300">${request.specs || 'N/A'}</p>
-                        </div>
+                        <div><label class="text-sm text-slate-400">Product</label><p class="font-semibold text-lg">${request.title}</p></div>
+                        <div><label class="text-sm text-slate-400">Quantity</label><p class="font-semibold text-lg">${request.quantity}</p></div>
+                        <div><label class="text-sm text-slate-400">Specifications</label><p class="text-slate-300">${request.specs || 'N/A'}</p></div>
                     </div>
                 </div>`;
             }
@@ -414,7 +421,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let mainActionPanel;
             switch (request.status) {
                 case 'agent-working':
-                    mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400 animate-pulse">Agent is working in the background...</p></div>`;
+                    mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400 animate-pulse">Agent is working...</p></div>`;
                     break;
                 case 'awaiting-approval':
                     mainActionPanel = this.generateApprovalPanel(request);
@@ -424,7 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     mainActionPanel = this.generateQuotesPanel(request);
                     break;
                 default:
-                    mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400">No actions available at this stage.</p></div>`;
+                    mainActionPanel = `<div class="bg-slate-900 p-6 rounded-lg flex items-center justify-center h-full"><p class="text-slate-400">No actions available.</p></div>`;
             }
 
             return `
@@ -438,6 +445,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
         },
 
+        // 🔄 MODIFIED: This function is now fixed to show the full RFQ draft.
         generateApprovalPanel(request) {
             const suppliers = request.suppliers || [];
             let supplierListHtml;
@@ -449,53 +457,109 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div>
                             <p class="font-semibold">${s.name}</p>
                             <p class="text-xs text-slate-400">Email: ${s.email || 'Not Found'}</p>
-                            <p class="text-xs text-slate-400">Phone: ${s.phone || 'Not Found'}</p>
                         </div>
-                        <input type="checkbox" checked class="form-checkbox h-5 w-5 bg-slate-600 border-slate-500 rounded text-indigo-600 focus:ring-indigo-500">
+                        <input type="checkbox" checked class="form-checkbox h-5 w-5 bg-slate-600 border-slate-500 rounded text-indigo-600">
                     </li>
                 `).join('');
-                actionButtonHtml = `<button id="approve-rfq-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">Approve & Send Email RFQs</button>`;
+                actionButtonHtml = `<button id="approve-rfq-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg">Approve & Send Email RFQs</button>`;
             } else {
-                supplierListHtml = '<li class="text-slate-400">The agent could not find any suppliers. You can manually contact suppliers and then mark this request as sent.</li>';
-                actionButtonHtml = `<button id="manual-rfq-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg transition-colors">Manually Mark as RFQ Sent</button>`;
+                supplierListHtml = '<li class="text-slate-400">Agent found no suppliers. Manually contact suppliers and mark as sent.</li>';
+                actionButtonHtml = `<button id="manual-rfq-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg">Manually Mark as RFQ Sent</button>`;
             }
-
-            const subject = `Request for Quotation - ${request.title} [REQ-${request.id}]`;
-            const messageBody = `Dear Supplier,\n\nWe are interested in procuring the following item:\n\nProduct: ${request.title}\nQuantity: ${request.quantity}\nSpecifications: ${request.specs || 'As per standard'}\n\nPlease provide your best quotation in a reply to this email.\n\nThank you,\nProcunova Automated System`;
+            
+            // ✨ NEW: Complete RFQ Draft HTML
+            const rfqSubject = `Request for Quotation - ${request.title} [REQ-${request.id}]`;
+            const rfqBody = `Dear Supplier,\n\nWe are interested in procuring the following item:\n\nProduct: ${request.title}\nQuantity: ${request.quantity}\n\nSpecifications:\n${request.specs || 'As per standard'}\n\nPlease provide your best quotation in a reply to this email.\n\nThank you,\nProcunova Automated System`;
 
             const rfqDraftHtml = `
-                <h4 class="font-bold text-slate-300 mb-2">Drafted RFQ Email Preview:</h4>
-                <div class="bg-slate-800 p-3 rounded-md text-sm border border-slate-700 mb-4">
-                    <p><strong>Subject:</strong> ${subject}</p>
-                    <div class="border-t border-slate-700 my-2"></div>
-                    <pre class="whitespace-pre-wrap font-sans text-slate-300">${messageBody}</pre>
+                <h4 class="font-bold text-slate-300 mb-2 mt-4">RFQ Email Draft</h4>
+                <div class="bg-slate-800 p-3 rounded-md border border-slate-700 mb-4">
+                    <p class="text-sm font-semibold">Subject: ${rfqSubject}</p>
+                    <pre class="mt-2 text-sm text-slate-300 whitespace-pre-wrap font-sans">${rfqBody}</pre>
                 </div>
                 <h4 class="font-bold text-slate-300 mb-2 mt-4">Attach File (Optional):</h4>
                 <div class="bg-slate-800 p-3 rounded-md border border-slate-700 mb-4">
-                    <input type="file" id="rfq-attachment-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600"/>
+                    <input type="file" id="rfq-attachment-input" class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-indigo-500 file:text-white"/>
                 </div>
                 `;
 
             return `
                 <div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
                     <h3 class="text-xl font-bold mb-2">Vetted Supplier List</h3>
-                    <ul class="space-y-2 flex-grow overflow-y-auto pr-2 mb-4">${supplierListHtml}</ul>
+                    <div class="flex-grow overflow-y-auto pr-2 mb-4">
+                         <ul class="space-y-2">${supplierListHtml}</ul>
+                         ${(suppliers.length > 0 ? rfqDraftHtml : '')}
+                    </div>
                     <div class="border-t border-slate-700 pt-4">
-                        ${(suppliers.length > 0 ? rfqDraftHtml : '')}
                         ${actionButtonHtml}
                     </div>
                 </div>`;
         },
-
+        
         generateQuotesPanel(request) {
             const quotes = request.quotes || [];
-            // Sort quotes by price, handling null or undefined prices
+            
+            if (quotes.length === 1) {
+                const quote = quotes[0];
+                let benchmarkHtml = '';
+                if (request.benchmark_price && request.benchmark_source) {
+                    const benchmarkPrice = parseFloat(request.benchmark_price).toFixed(2);
+                    const currentPrice = parseFloat(quote.price).toFixed(2);
+                    const difference = parseFloat(request.benchmark_price) - parseFloat(quote.price);
+                    let diffClass = 'text-slate-400';
+                    let diffText = `(₹${difference.toFixed(2)} difference)`;
+                    if (difference > 0) {
+                        diffClass = 'text-green-400';
+                        diffText = `(You save ₹${difference.toFixed(2)})`;
+                    } else if (difference < 0) {
+                        diffClass = 'text-red-400';
+                        diffText = `(₹${Math.abs(difference).toFixed(2)} more expensive)`;
+                    }
+
+                    benchmarkHtml = `
+                        <div class="mt-4 border-t border-slate-700 pt-4">
+                            <h4 class="font-bold text-slate-300">Price Benchmark</h4>
+                            <div class="mt-2 flex justify-between items-center bg-slate-800 p-3 rounded-lg">
+                                <div>
+                                    <p class="text-sm text-slate-400">${request.benchmark_source}</p>
+                                    <p class="text-xl font-bold text-sky-400">₹${benchmarkPrice}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-slate-400">vs. Current Quote</p>
+                                    <p class="text-xl font-bold text-green-400">₹${currentPrice} <span class="text-sm ${diffClass}">${diffText}</span></p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+
+                return `
+                <div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Quote Received</h3>
+                        <button id="find-more-suppliers-btn" data-product-id="${request.id}" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2 px-3 rounded-lg text-sm">
+                            + Find More Suppliers
+                        </button>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-4">Only one quote has been received. Use the benchmark for comparison or find more suppliers.</p>
+                    <div class="space-y-3 bg-slate-800 p-4 rounded-lg">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div><p class="text-sm text-slate-400">Supplier</p><p class="font-bold">${quote.supplier__name}</p></div>
+                            <div><p class="text-sm text-slate-400">Price</p><p class="font-bold text-green-400">₹${quote.price ? parseFloat(quote.price).toFixed(2) : 'N/A'}</p></div>
+                            <div><p class="text-sm text-slate-400">Lead Time</p><p class="font-bold">${quote.lead_time_days || 'N/A'} days</p></div>
+                            <div><p class="text-sm text-slate-400">Payment Terms</p><p class="font-bold">${quote.payment_terms || 'N/A'}</p></div>
+                        </div>
+                    </div>
+                    ${benchmarkHtml}
+                    <div class="mt-auto pt-6 flex gap-4">
+                        <button class="view-quote-btn flex-1 text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-2 rounded-lg" data-quote-id="${quote.id}">View Full Email</button>
+                        <button class="finalize-request-btn flex-1 text-sm bg-green-600 hover:bg-green-500 px-3 py-2 rounded-lg" data-quote-id="${quote.id}">Award Contract</button>
+                    </div>
+                </div>`;
+            }
+
             quotes.sort((a, b) => (a.price || Infinity) - (b.price || Infinity));
-
             const quotesHtml = quotes.map((q, index) => {
-                const supplier = (this.currentRequestData.suppliers || []).find(s => s.name === q.supplier__name);
-                const negotiateLink = supplier && supplier.email ? `mailto:${supplier.email}?subject=Re: Quote for ${this.currentRequestData.title}` : '#';
-
                 let priceClass = 'text-slate-300';
                 let bestQuoteBadge = '';
                 if (index === 0 && q.price) {
@@ -504,36 +568,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (index === 1 && q.price) {
                     priceClass = 'text-amber-400';
                 }
-
-                return `
-                <tr class="border-b border-slate-700 hover:bg-slate-800">
+                return `<tr class="border-b border-slate-700 hover:bg-slate-800">
                     <td class="p-3 font-semibold">${q.supplier__name}</td>
                     <td class="p-3 font-bold ${priceClass}">₹${q.price ? parseFloat(q.price).toFixed(2) : 'N/A'} ${bestQuoteBadge}</td>
                     <td class="p-3">${q.lead_time_days || 'N/A'} days</td>
                     <td class="p-3">${q.payment_terms || 'N/A'}</td>
-                    <td class="p-3">${q.discount || 'None'}</td>
                     <td class="p-3 text-right">
                         <button class="view-quote-btn text-sm bg-indigo-600 hover:bg-indigo-500 px-3 py-1 rounded" data-quote-id="${q.id}">Details</button>
-                        <a href="${negotiateLink}" class="text-sm bg-sky-600 hover:bg-sky-500 px-3 py-1 rounded ml-2">Negotiate</a>
                         <button class="finalize-request-btn text-sm bg-green-600 hover:bg-green-500 px-3 py-1 rounded ml-2" data-quote-id="${q.id}">Award</button>
                     </td>
                 </tr>`
-            }).join('') || '<tr><td colspan="6" class="text-center p-4 text-slate-400">No valid quotes parsed yet. The agent is monitoring the inbox.</td></tr>';
+            }).join('') || '<tr><td colspan="5" class="text-center p-4 text-slate-400">No quotes parsed yet.</td></tr>';
 
             return `
                 <div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
-                    <h3 class="text-xl font-bold mb-2">Quotation Comparison</h3>
-                    <p class="text-sm text-slate-400 mb-4">Quotes are sorted by best price. The lowest price is highlighted as the <b>Best Quote</b>.</p>
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Quotation Comparison</h3>
+                        <button id="find-more-suppliers-btn" data-product-id="${request.id}" class="bg-sky-600 hover:bg-sky-500 text-white font-semibold py-2 px-3 rounded-lg text-sm">
+                            + Find More Suppliers
+                        </button>
+                    </div>
+                    <p class="text-sm text-slate-400 mb-4">Quotes are sorted by best price.</p>
                     <div class="flex-grow overflow-y-auto">
                         <table class="w-full text-left text-sm">
                             <thead class="sticky top-0 bg-slate-900 z-10">
                                 <tr class="border-b border-slate-600">
-                                    <th class="p-3">Supplier</th>
-                                    <th class="p-3">Price (per unit)</th>
-                                    <th class="p-3">Lead Time</th>
-                                    <th class="p-3">Payment Terms</th>
-                                    <th class="p-3">Discount</th>
-                                    <th class="p-3 text-right">Actions</th>
+                                    <th class="p-3">Supplier</th><th class="p-3">Price</th><th class="p-3">Lead Time</th>
+                                    <th class="p-3">Payment Terms</th><th class="p-3 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>${quotesHtml}</tbody>
@@ -543,19 +604,13 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         generateQuoteDetailView(quote) {
-            const supplier = (this.currentRequestData.suppliers || []).find(s => s.name === quote.supplier__name);
-            const negotiateLink = supplier && supplier.email ? `mailto:${supplier.email}?subject=Re: Quote for ${this.currentRequestData.title}` : '#';
-
-            return `
+             return `
                 <div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
                     <div class="flex justify-between items-start mb-4">
                         <div>
-                            <h3 class="text-xl font-bold">Quote Details from: ${quote.supplier__name}</h3>
-                            <p class="text-sm text-slate-400">Full email response from the supplier.</p>
+                            <h3 class="text-xl font-bold">Details from: ${quote.supplier__name}</h3>
                         </div>
-                        <div class="flex gap-x-2">
-                            <button class="back-to-compare-btn bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg text-sm">← Back to Comparison</button>
-                        </div>
+                        <button class="back-to-compare-btn bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg text-sm">← Back</button>
                     </div>
                     <div class="grid grid-cols-4 gap-4 mb-4 text-center">
                         <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Price</dt><dd class="font-bold text-lg text-green-400">₹${quote.price ? parseFloat(quote.price).toFixed(2) : 'N/A'}</dd></div>
@@ -571,9 +626,11 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         attachModalEventListeners(request) {
-            document.getElementById('close-modal-btn')?.addEventListener('click', () => this.closeDrillDownModal());
-            const approveBtn = document.getElementById('approve-rfq-btn');
-            if (approveBtn) approveBtn.addEventListener('click', () => this.runRfqSend(request));
+            document.getElementById('close-modal-btn')?.addEventListener('click', () => {
+                this.closeDrillDownModal()
+            });
+            // This button is dynamically added, so we don't attach listener here anymore
+            // It's handled by the main modalContentContainer listener
         },
     };
     app.init();

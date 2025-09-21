@@ -11,7 +11,6 @@ from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
 from django.conf import settings
 from serpapi import GoogleSearch
-# 🔄 MODIFIED: Import new models
 from procurement.models import ProcurementRequest, Supplier, Product, MasterVendor
 from asgiref.sync import sync_to_async
 
@@ -23,12 +22,10 @@ def clean_phone_number(phone_text: str) -> str | None:
         return cleaned
     return None
 
-# 🔄 MODIFIED: Made the function more resilient to timeouts and errors
 async def find_contact_info(page: Page) -> dict:
     details = {'email': None, 'phone': None}
     base_url = page.url
     try:
-        # Give more time for lazy-loading elements
         await page.wait_for_load_state('networkidle', timeout=30000)
         content = await page.content()
         
@@ -38,7 +35,6 @@ async def find_contact_info(page: Page) -> dict:
         phone_match = re.search(r'(?:\+91|0)?[-\s]?(?:[6-9]\d{2,3}[-\s]?\d{3}[-\s]?\d{4})', content)
         if phone_match: details['phone'] = clean_phone_number(phone_match.group(0))
 
-        # If details are missing, try to find a contact page
         if not all(details.values()):
             contact_link = page.locator('a[href*="contact"]').first
             if await contact_link.is_visible(timeout=5000):
@@ -46,7 +42,6 @@ async def find_contact_info(page: Page) -> dict:
                 if contact_href:
                     contact_url = urljoin(base_url, contact_href)
                     print(f"      - Navigating to contact page: {contact_url}")
-                    # Use a separate try-except for contact page navigation
                     try:
                         await page.goto(contact_url, wait_until="domcontentloaded", timeout=30000)
                         contact_content = await page.content()
@@ -64,7 +59,6 @@ async def find_contact_info(page: Page) -> dict:
         print(f"      - Could not extract contact details from {base_url}: {e}")
     return details
 
-# 🔄 MODIFIED: Increased timeout for SearXNG
 def search_with_searxng(query: str, num_results: int = 10, start_index: int = 0) -> list:
     if not settings.SEARXNG_INSTANCE_URL:
         print("   - SearXNG is not configured. Skipping fallback.")
@@ -77,9 +71,7 @@ def search_with_searxng(query: str, num_results: int = 10, start_index: int = 0)
 
         response = requests.get(
             settings.SEARXNG_INSTANCE_URL + "/search",
-            params=params, 
-            headers=headers, 
-            timeout=20  # Increased timeout
+            params=params, headers=headers, timeout=20
         )
         response.raise_for_status()
         data = response.json()
@@ -93,15 +85,66 @@ def search_with_searxng(query: str, num_results: int = 10, start_index: int = 0)
         print(f"   - ❌ Error decoding JSON response from SearXNG.")
         return []
 
+# ✨ NEW: Helper function to scrape product specifications from an IndiaMart product page
+async def scrape_product_specifications(page: Page) -> str | None:
+    print("      - Scraping for detailed product specifications...")
+    try:
+        # Wait for either a "Product Specification" heading or a specification table
+        spec_heading_selector = "h2:has-text('Product Specification')"
+        spec_table_selector = "table.pro-spec-table"
+        
+        # Wait for either of the elements to be present
+        await page.wait_for_selector(f"{spec_heading_selector}, {spec_table_selector}", timeout=15000)
+
+        content = await page.content()
+        soup = BeautifulSoup(content, 'html.parser')
+
+        spec_table = soup.find('table', class_='pro-spec-table')
+        if spec_table:
+            specs_text = []
+            rows = spec_table.find_all('tr')
+            for row in rows:
+                cols = row.find_all('td')
+                if len(cols) == 2:
+                    key = cols[0].get_text(strip=True)
+                    value = cols[1].get_text(strip=True)
+                    if key and value:
+                        specs_text.append(f"{key}: {value}")
+            if specs_text:
+                print("      ✅ Found specifications in table.")
+                return "\n".join(specs_text)
+
+        # Fallback to finding the section by heading if table fails
+        heading = soup.find('h2', string='Product Specification')
+        if heading:
+            parent_section = heading.find_parent('section')
+            if parent_section:
+                specs_list = parent_section.find('ul')
+                if specs_list:
+                    specs_text = [li.get_text(strip=True) for li in specs_list.find_all('li')]
+                    if specs_text:
+                        print("      ✅ Found specifications in list format.")
+                        return "\n".join(specs_text)
+
+    except PlaywrightTimeoutError:
+        print("      - Timed out waiting for specification elements on the page.")
+        return None
+    except Exception as e:
+        print(f"      - Error scraping specifications: {e}")
+        return None
+    
+    print("      - Could not find specifications in a structured format.")
+    return None
+
+
 # --- Django Database Interaction ---
 @sync_to_async
 def get_procurement_request(request_id: int):
     return ProcurementRequest.objects.select_related('product').get(id=request_id)
 
-# 🔄 MODIFIED: Logic to save to MasterVendor and Product models
 @sync_to_async
 def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list):
-    proc_request.suppliers.all().delete()
+    proc_request.suppliers.all().delete() # Note: Consider if you want to append instead of replace
     saved_count = 0
     seen_emails = set()
     product = proc_request.product
@@ -109,7 +152,6 @@ def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list)
     for data in suppliers_data:
         email = data.get('email')
         if email and email not in seen_emails:
-            # Get or create a master vendor record
             master_vendor, created = MasterVendor.objects.get_or_create(
                 email=email,
                 defaults={
@@ -118,22 +160,31 @@ def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list)
                     'source_link': data.get('source_link')
                 }
             )
-            # Link master vendor to the product
             if product:
                 master_vendor.products.add(product)
 
-            # Create the request-specific supplier entry
             Supplier.objects.create(
                 procurement_request=proc_request,
                 master_vendor=master_vendor,
-                name=master_vendor.name,
-                email=master_vendor.email,
-                phone=master_vendor.phone,
-                source_link=master_vendor.source_link
+                name=master_vendor.name, email=master_vendor.email,
+                phone=master_vendor.phone, source_link=master_vendor.source_link
             )
             seen_emails.add(email)
             saved_count += 1
     return saved_count
+
+# ✨ NEW: Async function to update the request's specifications
+@sync_to_async
+def update_request_specs(proc_request: ProcurementRequest, new_specs: str):
+    """Appends scraped specifications to the existing specs."""
+    current_specs = proc_request.specs or ""
+    
+    # Append new specs, ensuring not to add if already present
+    if "--- Auto-scraped Specifications ---" not in current_specs:
+        updated_specs = f"{current_specs}\n\n--- Auto-scraped Specifications ---\n{new_specs}".strip()
+        proc_request.specs = updated_specs
+        proc_request.save(update_fields=['specs'])
+        print(f"   ✅ Updated request {proc_request.id} with scraped specifications.")
 
 @sync_to_async
 def set_request_status(proc_request: ProcurementRequest, status: str):
@@ -147,7 +198,6 @@ async def run_supplier_sourcing_agent(request_id):
         print(f"Error: ProcurementRequest with ID {request_id} not found.")
         return
 
-    # Use the product name from the request's linked product, if available
     product_name = proc_request.product.name if proc_request.product else proc_request.title
     print(f"🚀 Sourcing started: '{product_name}'")
 
@@ -157,27 +207,59 @@ async def run_supplier_sourcing_agent(request_id):
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(headless=True)
-        # 🔄 MODIFIED: Set a realistic user agent and default timeout for the browser context
         context = await browser.new_context(
             user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
         )
         page = await context.new_page()
-        page.set_default_navigation_timeout(60000) # 60 seconds default timeout
+        page.set_default_navigation_timeout(60000)
 
         # --- PHASE 1: Sourcing from Indiamart ---
-        print("\n--- AGENT PHASE 1: Sourcing from Indiamart... ---")
+        print("\n--- AGENT PHASE 1: Scrape Specs & Find Suppliers from Indiamart ---")
         try:
             search_query_im = quote_plus(product_name)
             indiamart_search_url = f"https://dir.indiamart.com/search.mp?ss={search_query_im}"
             await page.goto(indiamart_search_url, wait_until="load", timeout=60000)
+            
+            # 🔄 MODIFIED: New logic block to find and scrape product specifications first
+            print("  -> Attempting to find and scrape product specifications...")
+            try:
+                # Find the first product link on the search results page
+                first_product_link_selector = 'a.prd-name'
+                first_product_link = page.locator(first_product_link_selector).first
+                
+                if await first_product_link.is_visible(timeout=10000):
+                    product_href = await first_product_link.get_attribute('href')
+                    if product_href:
+                        product_url = urljoin(indiamart_search_url, product_href)
+                        print(f"    - Navigating to first product page: {product_url}")
+                        await page.goto(product_url, wait_until="domcontentloaded")
+                        
+                        # Scrape specifications from the product detail page
+                        scraped_specs = await scrape_product_specifications(page)
+                        
+                        if scraped_specs:
+                            # Save the scraped specs to the database
+                            await update_request_specs(proc_request, scraped_specs)
+                        
+                        # IMPORTANT: Go back to the search results page to find suppliers
+                        print("    - Navigating back to search results page.")
+                        await page.go_back(wait_until="domcontentloaded")
+                else:
+                    print("    - Could not find a product link to scrape for specs.")
+            except Exception as e_specs:
+                print(f"    - ❌ Error during specification scraping phase: {e_specs}")
+                # Ensure we are back on the search page if an error occurred
+                if page.url != indiamart_search_url:
+                    await page.goto(indiamart_search_url, wait_until="load", timeout=60000)
+
+            # Now, continue to find supplier names from the search results page
             soup = BeautifulSoup(await page.content(), 'html.parser')
-            vendor_links = soup.select('a.prd-name') # More specific selector
+            vendor_links = soup.select('a.prd-name') 
             vendor_names = {link.get_text(strip=True) for link in vendor_links if link.get_text(strip=True)}
             
             if vendor_names:
-                print(f"  -> Found {len(vendor_names)} vendors on Indiamart. Finding their official sites...")
-                for name in list(vendor_names)[:10]: # Limit to top 10 to be faster
-                    # 🔄 MODIFIED: Wrap in try-except to handle failures for individual vendors
+                print(f"  -> Found {len(vendor_names)} potential vendors on Indiamart. Finding their official sites...")
+                for name in list(vendor_names)[:10]:
                     try:
                         search_query = f'"{name}" official website contact'
                         results = []
@@ -229,7 +311,6 @@ async def run_supplier_sourcing_agent(request_id):
                 if not results: break
 
                 for result in results:
-                    # 🔄 MODIFIED: Wrap in try-except to handle failures for individual search results
                     try:
                         website_url = result.get("link")
                         if not website_url: continue
@@ -250,7 +331,7 @@ async def run_supplier_sourcing_agent(request_id):
                         print(f"      ❌ Error processing URL '{website_url}': {e}")
             except Exception as e_phase2:
                 print(f"❌ Error in Google sourcing phase: {e_phase2}")
-                break # Stop if a major error occurs in this phase
+                break
 
         await browser.close()
 
@@ -266,7 +347,7 @@ async def run_supplier_sourcing_agent(request_id):
         print(f"\nAgent finished for request {request_id}. Status set to 'Awaiting Approval'.")
 
 class Command(BaseCommand):
-    help = 'Runs the supplier sourcing agent with improved error handling.'
+    help = 'Runs the supplier sourcing agent, now with automatic specification scraping.'
     
     def add_arguments(self, parser):
         parser.add_argument('request_id', type=int, help='The ID of the ProcurementRequest to process')

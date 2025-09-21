@@ -14,12 +14,13 @@ urlpatterns = [
     
     # Main request details and action endpoints
     path('api/get-request-details/<int:pk>/', views.get_request_details_api, name='api_get_request_details'),
-    # ✨ NEW: URL for the product-centric quote view API
     path('api/get-product-quotes/<int:product_id>/', views.get_product_quotes_api, name='api_get_product_quotes'),
     path('api/delete-request/<int:pk>/', views.delete_request_api, name='api_delete_request'),
 
     # Agent stage APIs
     path('api/find-suppliers/<int:pk>/', views.find_suppliers_api, name='api_find_suppliers'),
+    # ✨ NEW: API to find more suppliers for an existing product request
+    path('api/find-more-suppliers/<int:product_id>/', views.find_more_suppliers_api, name='api_find_more_suppliers'),
     path('api/send-rfqs/<int:pk>/', views.send_rfqs_api, name='api_send_rfqs'),
     path('api/check-and-parse-quotes/<int:pk>/', views.check_and_parse_quotes_api, name='api_check_and_parse_quotes'),
     path('api/check-all-rfqs/', views.check_all_rfqs_api, name='api_check_all_rfqs'),

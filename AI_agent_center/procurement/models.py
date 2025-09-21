@@ -1,19 +1,16 @@
 from django.db import models
 
-# ✨ NEW: Central model to store products
 class Product(models.Model):
     name = models.CharField(max_length=255, unique=True)
 
     def __str__(self):
         return self.name
 
-# ✨ NEW: Central model to store all unique vendors
 class MasterVendor(models.Model):
     name = models.CharField(max_length=255)
     email = models.EmailField(unique=True, null=True, blank=True)
     phone = models.CharField(max_length=50, blank=True, null=True)
     source_link = models.URLField(max_length=500, blank=True, null=True)
-    # Link vendors to the products they can supply
     products = models.ManyToManyField(Product, related_name='vendors')
 
     def __str__(self):
@@ -31,7 +28,6 @@ class ProcurementRequest(models.Model):
     SOURCE_CHOICES = [('Manual', 'Manual'), ('Bulk Upload', 'Bulk Upload')]
 
     title = models.CharField(max_length=255)
-    # 🔄 MODIFIED: Link to the central Product model
     product = models.ForeignKey(Product, on_delete=models.SET_NULL, null=True, blank=True)
     quantity = models.CharField(max_length=100)
     specs = models.TextField(blank=True, null=True)
@@ -43,13 +39,15 @@ class ProcurementRequest(models.Model):
     
     selected_quote = models.ForeignKey('Quote', related_name='chosen_for_request', on_delete=models.SET_NULL, null=True, blank=True)
     estimated_savings = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    # This field stores the source of the benchmark price for transparency
+    benchmark_source = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return self.title
 
 class Supplier(models.Model):
     procurement_request = models.ForeignKey(ProcurementRequest, related_name='suppliers', on_delete=models.CASCADE)
-    # 🔄 MODIFIED: Link to the central MasterVendor model
     master_vendor = models.ForeignKey(MasterVendor, on_delete=models.CASCADE, null=True, blank=True)
     name = models.CharField(max_length=255)
     email = models.EmailField(blank=True, null=True)

@@ -1,5 +1,3 @@
-# procurement/utils.py
-
 import re
 import json
 import imaplib
@@ -9,7 +7,7 @@ import fitz  # PyMuPDF
 import io
 from PIL import Image
 import pytesseract
-import csv # <-- Added for CSV parsing
+import csv 
 import google.generativeai as genai
 from django.conf import settings
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
@@ -62,14 +60,39 @@ def get_ai_response(prompt):
         print(f"An unexpected AI error occurred: {e}")
         return None
 
+# ✨ NEW: Function to get a benchmark price from the AI when no other quotes are available
+def get_ai_benchmark_price(product_name, specs):
+    """
+    Asks the AI to estimate a fair market price for a product.
+    """
+    if not model:
+        return None
+
+    prompt = (
+        f"You are a procurement expert for the Indian market. Based on the following product details, "
+        f"provide an estimated fair market price for a single unit in Indian Rupees (INR). "
+        f"Your response MUST be a valid JSON object with a single key: 'estimated_price'. "
+        f"The value should be a number only, without any currency symbols or text.\n\n"
+        f"Product Name: '{product_name}'\n"
+        f"Specifications: '{specs}'\n\n"
+        f"Return ONLY the JSON object."
+    )
+    
+    response_data = get_ai_response(prompt)
+    if response_data and 'estimated_price' in response_data:
+        try:
+            return float(response_data['estimated_price'])
+        except (ValueError, TypeError):
+            return None
+    return None
+
+
 def process_incoming_quotes():
     """
     Independent agent function to process new incoming quotation emails.
     Updated to:
-    - Fetch only recent unseen emails
-    - Sort by newest first
-    - Optionally limit to a certain number of latest emails
-    - Parse text from PDF, Image, Excel, CSV, and TXT attachments
+    - Handle emails with multiple line items correctly.
+    - Use a single, more robust AI prompt for parsing all items.
     """
     new_quotes_found = 0
     
@@ -97,7 +120,7 @@ def process_incoming_quotes():
             return 0
 
         # --- STEP 3: Sort emails so latest come first ---
-        email_ids.sort(reverse=True)  # Higher UID = Newer email
+        email_ids.sort(reverse=True)
 
         # --- STEP 4: Limit to the most recent 10 unseen emails (Optional) ---
         MAX_EMAILS = 10
@@ -105,7 +128,6 @@ def process_incoming_quotes():
 
         print(f"Found {len(email_ids)} recent unseen emails to process.")
 
-        # Fetch already processed email UIDs to prevent duplicates
         processed_uids = set(Quote.objects.values_list('parsed_from_email_uid', flat=True))
 
         # --- STEP 5: Loop through latest unseen emails ---
@@ -114,16 +136,13 @@ def process_incoming_quotes():
             if status != 'OK':
                 continue
 
-            # Extract the email's UID
             try:
                 uid_match = re.search(r'UID\s+(\d+)', single_email_data[0][0].decode())
                 if not uid_match:
                     continue
                 uid = uid_match.group(1)
-
-                # Skip if already processed
                 if uid in processed_uids:
-                    mail.store(e_id, '+FLAGS', '\\Seen')  # Mark as seen
+                    mail.store(e_id, '+FLAGS', '\\Seen')
                     continue
             except (IndexError, AttributeError):
                 continue
@@ -133,7 +152,6 @@ def process_incoming_quotes():
             sender_name, sender_email = email.utils.parseaddr(msg.get("From"))
             vendor_display_name = sender_name if sender_name else sender_email.split('@')[0]
 
-            # Extract text from email body
             extracted_text = ""
             if msg.is_multipart():
                 for part in msg.walk():
@@ -142,7 +160,6 @@ def process_incoming_quotes():
             else:
                 extracted_text += msg.get_payload(decode=True).decode(errors='ignore') + "\n\n"
 
-            # === UPDATED SECTION: Extract text from various attachments ===
             for part in msg.walk():
                 if part.get_content_maintype() == 'multipart' or part.get('Content-Disposition') is None:
                     continue
@@ -152,50 +169,34 @@ def process_incoming_quotes():
                         attachment_bytes = part.get_payload(decode=True)
                         extracted_text += f"\n--- ATTACHMENT: {filename} ---\n"
                         
-                        # PDF Parsing (Existing)
                         if filename.lower().endswith('.pdf'):
                             with fitz.open(stream=io.BytesIO(attachment_bytes), filetype="pdf") as doc:
                                 for page in doc:
                                     extracted_text += page.get_text() + "\n"
-                        
-                        # Image OCR (Existing)
                         elif filename.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff')):
                             image = Image.open(io.BytesIO(attachment_bytes))
                             extracted_text += pytesseract.image_to_string(image) + "\n"
-                        
-                        # --- NEW: XLSX Parsing ---
                         elif filename.lower().endswith('.xlsx') and EXCEL_LIBS_INSTALLED:
                             workbook = openpyxl.load_workbook(io.BytesIO(attachment_bytes))
-                            for sheet_name in workbook.sheetnames:
-                                sheet = workbook[sheet_name]
+                            for sheet in workbook.worksheets:
                                 for row in sheet.iter_rows():
                                     row_text = [str(cell.value) for cell in row if cell.value is not None]
-                                    if row_text:
-                                        extracted_text += ", ".join(row_text) + "\n"
-                        
-                        # --- NEW: XLS Parsing ---
+                                    if row_text: extracted_text += ", ".join(row_text) + "\n"
                         elif filename.lower().endswith('.xls') and EXCEL_LIBS_INSTALLED:
                             workbook = xlrd.open_workbook(file_contents=attachment_bytes)
                             for sheet in workbook.sheets():
                                 for row_idx in range(sheet.nrows):
                                     row_text = [str(cell.value) for cell in sheet.row(row_idx) if cell.value is not None]
-                                    if row_text:
-                                        extracted_text += ", ".join(row_text) + "\n"
-                        
-                        # --- NEW: CSV Parsing ---
+                                    if row_text: extracted_text += ", ".join(row_text) + "\n"
                         elif filename.lower().endswith('.csv'):
                             decoded_content = attachment_bytes.decode('utf-8', errors='ignore')
-                            csv_file = io.StringIO(decoded_content)
-                            reader = csv.reader(csv_file)
+                            reader = csv.reader(io.StringIO(decoded_content))
                             for row in reader:
                                 extracted_text += ", ".join(row) + "\n"
-
-                        # --- NEW: TXT Parsing ---
                         elif filename.lower().endswith('.txt'):
                             extracted_text += attachment_bytes.decode('utf-8', errors='ignore') + "\n"
 
                         extracted_text += f"--- END ATTACHMENT: {filename} ---\n\n"
-
                     except Exception as e:
                         print(f"Failed to parse attachment {filename}: {e}")
 
@@ -203,78 +204,81 @@ def process_incoming_quotes():
                 print(f"⚠️ No text extracted from email ID {e_id} - skipping")
                 continue
 
-            # --- STEP 7: Identify product name using Gemini AI ---
-            product_identification_prompt = (
-                f"From the following email/quotation text, identify the specific product name being quoted. "
-                f"Be very precise. For example, if the text mentions '100 units of M12 High-Tensile Bolts', "
-                f"the product is 'M12 High-Tensile Bolts'. "
-                f"Return ONLY a valid JSON object with a single key 'product_name'. "
-                f"If you cannot determine a specific product, return a value of null.\n\n"
-                f"Email Text:\n---\n{extracted_text[:10000]}"  # Truncate for performance
-            )
-            identified_product_data = get_ai_response(product_identification_prompt)
-            product_name = (
-                identified_product_data.get('product_name')
-                if identified_product_data and identified_product_data.get('product_name')
-                else f"Unidentified Quote from {vendor_display_name}"
-            )
-
-            # --- STEP 8: Find or create a procurement request ---
-            proc_request = ProcurementRequest.objects.filter(
-                product__name__iexact=product_name,
-                status__in=['rfqs-sent', 'quotes-received']
-            ).first()
-
-            if not proc_request:
-                product, _ = Product.objects.get_or_create(name=product_name)
-                proc_request = ProcurementRequest.objects.create(
-                    title=product_name,
-                    product=product,
-                    status='quotes-received',
-                    quantity='N/A (from email)',
-                    specs=f'Automatically created from a quote received from {sender_email}.',
-                    source='Manual'
-                )
-                print(f"✅ Created a new product-based request '{product_name}' for quote from {sender_email}.")
-
-            # --- STEP 9: Extract quotation details using Gemini AI ---
+            # === NEW: STEP 7 - Use a single AI prompt to extract all line items ===
             parsing_prompt = (
-                f"You are an expert procurement assistant. From the following quotation text for our RFQ for '{proc_request.title}', "
-                f"extract the following details precisely. The response must be a valid JSON object. "
-                f"1. 'price': Extract the price per unit as a number only. Remove currency symbols like '₹' or '$'. "
-                f"2. 'lead_time_days': Extract the lead time as a single number of days. If it says '2-3 weeks', return 21. "
-                f"3. 'payment_terms': Extract the payment terms (e.g., 'Net 30', '50% Advance'). "
-                f"4. 'discount': Extract any offered discount (e.g., '5%'). If none, return null. "
+                f"You are an expert procurement assistant. From the following quotation text, "
+                f"extract all line items. The response MUST be a valid JSON object with a single key 'quotes', "
+                f"which contains a list of objects. Each object in the list represents a single quoted item and must have the following keys:\n"
+                f"1. 'product_name': Extract the specific product name. Be precise.\n"
+                f"2. 'price': Extract the price per unit as a number only. Remove currency symbols.\n"
+                f"3. 'lead_time_days': Extract lead time as a number of days. If '2-3 weeks', return 21. If not found, return null.\n"
+                f"4. 'payment_terms': Extract payment terms (e.g., 'Net 30'). If not found for a specific line item, it can be null.\n"
+                f"5. 'discount': Extract any discount (e.g., '5%'). If none, return null.\n\n"
+                f"If the text is not a quotation or you cannot find any line items, return an empty list: {{'quotes': []}}.\n"
                 f"Return ONLY the JSON object.\n\n"
-                f"Email Text:\n---\n{extracted_text[:30000]}"  # Truncate for performance
+                f"Email Text:\n---\n{extracted_text[:30000]}"
             )
             parsed_data = get_ai_response(parsing_prompt)
 
-            # --- STEP 10: Save data to the database ---
-            if parsed_data and parsed_data.get('price'):
+            if not parsed_data or not parsed_data.get('quotes'):
+                print(f"AI could not parse any quote items from email UID {uid}. Skipping.")
+                mail.store(e_id, '+FLAGS', '\\Seen')
+                continue
+
+            # === NEW: STEP 8 - Loop through each extracted quote item and save it ===
+            for item_data in parsed_data.get('quotes'):
+                product_name = item_data.get('product_name')
+                price = item_data.get('price')
+
+                if not product_name or price is None:
+                    print(f"Skipping an item from email UID {uid} due to missing name or price.")
+                    continue
+
+                # --- Find or create a procurement request for this specific item ---
+                proc_request = ProcurementRequest.objects.filter(
+                    product__name__iexact=product_name,
+                    status__in=['rfqs-sent', 'quotes-received']
+                ).first()
+
+                if not proc_request:
+                    product, _ = Product.objects.get_or_create(name=product_name)
+                    proc_request = ProcurementRequest.objects.create(
+                        title=product_name,
+                        product=product,
+                        status='quotes-received',
+                        quantity='N/A (from email)',
+                        specs=f'Automatically created from a quote received from {sender_email}.',
+                        source='Manual'
+                    )
+                    print(f"✅ Created a new request '{product_name}' for quote from {sender_email}.")
+
+                # --- Save the supplier and quote details to the database ---
                 master_vendor, _ = MasterVendor.objects.get_or_create(
-                    email=sender_email,  # <-- Save email directly
-                    defaults={
-                       'name': vendor_display_name
-                    }
+                    email=sender_email,
+                    defaults={'name': vendor_display_name}
                 )
                 master_vendor.products.add(proc_request.product)
 
                 supplier, _ = Supplier.objects.get_or_create(
                     procurement_request=proc_request,
                     master_vendor=master_vendor,
-                    defaults={'name': master_vendor.name, 'email': sender_email}  # <-- use sender_email
+                    defaults={'name': master_vendor.name, 'email': sender_email}
                 )
 
-                Quote.objects.create(
-                    procurement_request=proc_request,
-                    supplier=supplier,
-                    price=parsed_data.get('price'),
-                    lead_time_days=parsed_data.get('lead_time_days'),
-                    payment_terms=parsed_data.get('payment_terms'),
-                    discount=parsed_data.get('discount'),
-                    parsed_from_email_uid=uid,
-                    full_email_body=extracted_text
+                # Use a unique UID for each quote by combining email UID and product name
+                quote_uid = f"{uid}-{re.sub(r'[^a-zA-Z0-9]', '', product_name)}"
+
+                Quote.objects.update_or_create(
+                    parsed_from_email_uid=quote_uid,
+                    defaults={
+                        'procurement_request': proc_request,
+                        'supplier': supplier,
+                        'price': price,
+                        'lead_time_days': item_data.get('lead_time_days'),
+                        'payment_terms': item_data.get('payment_terms'),
+                        'discount': item_data.get('discount'),
+                        'full_email_body': extracted_text
+                    }
                 )
                 new_quotes_found += 1
 
@@ -287,7 +291,7 @@ def process_incoming_quotes():
             # Mark email as seen to prevent re-processing
             mail.store(e_id, '+FLAGS', '\\Seen')
 
-        # --- STEP 11: Close the connection ---
+        # --- STEP 9: Close the connection ---
         mail.close()
         mail.logout()
 
