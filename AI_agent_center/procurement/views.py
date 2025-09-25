@@ -5,7 +5,7 @@ import sys
 import subprocess
 from decimal import Decimal
 import requests
-
+import csv
 from django.shortcuts import render, redirect
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -14,8 +14,46 @@ from django.conf import settings
 from django.core.mail import EmailMessage, send_mail
 from django.db.models import Sum, Avg, Count
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
-# 🔄 MODIFIED: Import the new benchmark function and other utils
-from .utils import process_incoming_quotes, get_ai_benchmark_price, get_ai_response
+from .utils import process_incoming_quotes, get_ai_benchmark_price, get_ai_response, send_rfqs_for_request
+
+# Helper for the original manual flow (find suppliers -> manual approval)
+def start_supplier_scraping_agent(request_id):
+    """Starts the scrape_suppliers management command for a given request ID in a background thread."""
+    try:
+        req = ProcurementRequest.objects.get(pk=request_id)
+        req.status = 'agent-working'
+        req.save()
+        
+        def run_in_thread():
+            command = [sys.executable, 'manage.py', 'scrape_suppliers', str(request_id)]
+            subprocess.run(command)
+            
+        thread = threading.Thread(target=run_in_thread)
+        thread.start()
+        return True
+    except ProcurementRequest.DoesNotExist:
+        print(f"Could not start agent for request ID {request_id}: DoesNotExist.")
+        return False
+
+# ✨ NEW: Helper function for the fully automated bulk upload flow ✨
+def start_bulk_processing_agent(request_id):
+    """Starts the new end-to-end management command for a given request ID in a background thread."""
+    try:
+        req = ProcurementRequest.objects.get(pk=request_id)
+        req.status = 'agent-working'
+        req.save()
+        
+        def run_in_thread():
+            command = [sys.executable, 'manage.py', 'process_bulk_request', str(request_id)]
+            subprocess.run(command)
+            
+        thread = threading.Thread(target=run_in_thread)
+        thread.start()
+        return True
+    except ProcurementRequest.DoesNotExist:
+        print(f"Could not start bulk processing agent for request ID {request_id}: DoesNotExist.")
+        return False
+
 
 def procurement_dashboard_view(request):
     total_savings = ProcurementRequest.objects.filter(status='finalized').aggregate(total=Sum('estimated_savings'))['total'] or 0
@@ -31,7 +69,6 @@ def procurement_dashboard_view(request):
     except requests.RequestException:
         print("Could not fetch market data.")
 
-
     columns_data = [
         {'id': 'new-request', 'title': '📝 New Request', 'color': 'border-sky-500'},
         {'id': 'agent-working', 'title': '🤖 Agent Working', 'color': 'border-amber-500'},
@@ -40,9 +77,7 @@ def procurement_dashboard_view(request):
         {'id': 'quotes-received', 'title': '📊 Quotes Received', 'color': 'border-green-500'},
         {'id': 'finalized', 'title': '🏆 Finalized', 'color': 'border-slate-500'}
     ]
-    
     all_requests = ProcurementRequest.objects.all().order_by('-created_at')
-    
     for column in columns_data:
         if column['id'] == 'quotes-received':
             products_in_stage = Product.objects.filter(
@@ -62,7 +97,6 @@ def procurement_dashboard_view(request):
     }
     return render(request, 'procurement/dashboard.html', context)
 
-
 def get_product_quotes_api(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
@@ -72,6 +106,11 @@ def get_product_quotes_api(request, product_id):
         if not representative_request:
              return JsonResponse({'error': 'No active requests found for this product'}, status=404)
 
+        quote_values = list(quotes.values(
+            'id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 
+            'full_email_body', 'quantity', 'subtotal', 'tax_amount', 'freight_charges', 'total_amount'
+        ))
+
         data = {
             'id': product.id,
             'title': product.name,
@@ -79,17 +118,15 @@ def get_product_quotes_api(request, product_id):
             'quantity': representative_request.quantity,
             'specs': representative_request.specs,
             'status': 'quotes-received',
-            'quotes': list(quotes.values('id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 'full_email_body')),
+            'quotes': quote_values,
             'suppliers': list(Supplier.objects.filter(procurement_request__in=requests_for_product).distinct().values('name', 'email', 'phone')),
-            'benchmark_price': None, # ✨ NEW
-            'benchmark_source': None, # ✨ NEW
+            'benchmark_price': None,
+            'benchmark_source': None,
         }
-
         if quotes.count() == 1:
             historical_avg = ProcurementRequest.objects.filter(
                 product=product, status='finalized', selected_quote__price__isnull=False
             ).aggregate(avg_price=Avg('selected_quote__price'))['avg_price']
-
             if historical_avg:
                 data['benchmark_price'] = float(historical_avg)
                 data['benchmark_source'] = "Historical Average Price"
@@ -98,40 +135,63 @@ def get_product_quotes_api(request, product_id):
                 if ai_price:
                     data['benchmark_price'] = ai_price
                     data['benchmark_source'] = "AI Estimated Market Price"
-        
         return JsonResponse(data)
     except Product.DoesNotExist:
         return JsonResponse({'error': 'Product not found'}, status=404)
 
-
 def analysis_view(request):
     selected_product_id = request.GET.get('product')
+    
     finalized_requests = ProcurementRequest.objects.filter(status='finalized', selected_quote__isnull=False).select_related('selected_quote__supplier__master_vendor')
+    savings_data = ProcurementRequest.objects.filter(status='finalized', estimated_savings__gt=0).values('product__name').annotate(total_savings=Sum('estimated_savings')).order_by('-total_savings')
+
     if selected_product_id:
         finalized_requests = finalized_requests.filter(product_id=selected_product_id)
+        savings_data = savings_data.filter(product_id=selected_product_id)
 
+    overall_total_savings = savings_data.aggregate(total=Sum('total_savings'))['total'] or 0
+    
     products_with_vendors = Product.objects.annotate(
         vendor_count=Count('vendors')
     ).filter(vendor_count__gt=0).prefetch_related('vendors').order_by('name')
-
     if selected_product_id:
         products_with_vendors = products_with_vendors.filter(id=selected_product_id)
         
-    savings_data = ProcurementRequest.objects.filter(status='finalized', estimated_savings__gt=0).values('product__name').annotate(total_savings=Sum('estimated_savings')).order_by('-total_savings')
-    
-    chart_labels = [item['product__name'] for item in savings_data if item['product__name']]
-    chart_values = [float(item['total_savings']) for item in savings_data if item['product__name']]
+    line_chart_data = None
+    selected_product_name = ""
+    if selected_product_id:
+        try:
+            selected_product = Product.objects.get(id=selected_product_id)
+            selected_product_name = selected_product.name
+            price_history = ProcurementRequest.objects.filter(
+                product_id=selected_product_id,
+                status='finalized',
+                selected_quote__price__isnull=False
+            ).order_by('created_at').values(
+                'created_at', 
+                'selected_quote__price'
+            )
+            if price_history:
+                line_chart_labels = [entry['created_at'].strftime('%d %b %Y') for entry in price_history]
+                line_chart_values = [float(entry['selected_quote__price']) for entry in price_history]
+                line_chart_data = {
+                    'labels': json.dumps(line_chart_labels),
+                    'values': json.dumps(line_chart_values)
+                }
+        except Product.DoesNotExist:
+            pass
 
     context = {
         'products': Product.objects.all().order_by('name'),
         'finalized_requests': finalized_requests,
         'products_with_vendors': products_with_vendors,
         'selected_product_id': int(selected_product_id) if selected_product_id else None,
-        'chart_labels': json.dumps(chart_labels),
-        'chart_values': json.dumps(chart_values),
+        'savings_data': savings_data,
+        'overall_total_savings': overall_total_savings,
+        'line_chart_data': line_chart_data,
+        'selected_product_name': selected_product_name,
     }
     return render(request, 'procurement/analysis.html', context)
-
 
 @csrf_exempt
 @require_POST
@@ -148,39 +208,53 @@ def add_request_api(request):
     )
     return JsonResponse({'success': True, 'id': new_request.id})
 
+# --- MODIFIED: bulk_upload_api ---
 @require_POST
 def bulk_upload_api(request):
-    if 'file' not in request.FILES: return redirect('procurement:dashboard')
+    if 'file' not in request.FILES:
+        return redirect('procurement:dashboard')
+    
     uploaded_file = request.FILES['file']
     existing_titles = set(ProcurementRequest.objects.values_list('title', flat=True))
-    new_requests = []
+    
     try:
         decoded_file = uploaded_file.read().decode('utf-8').splitlines()
         reader = csv.DictReader(decoded_file)
+        
         for row in reader:
+            # Assumes your CSV has columns: 'Product Title', 'Quantity', 'Specifications'
             title = row.get('Product Title')
+            
             if title and title not in existing_titles:
                 product, _ = Product.objects.get_or_create(name=title)
-                new_requests.append(ProcurementRequest(
+                
+                new_request = ProcurementRequest.objects.create(
                     title=title,
                     product=product,
-                    quantity=row.get('Quantity'),
-                    specs=row.get('Specifications'),
+                    quantity=row.get('Quantity', 'N/A'),
+                    specs=row.get('Specifications', ''),
                     source='Bulk Upload',
                     status='new-request'
-                ))
+                )
+                
+                # Use the new agent that handles the full end-to-end process
+                start_bulk_processing_agent(new_request.id)
+
                 existing_titles.add(title)
-        if new_requests:
-            ProcurementRequest.objects.bulk_create(new_requests)
+
     except Exception as e:
         print(f"Error processing bulk upload file '{uploaded_file.name}': {e}")
+    
     return redirect('procurement:dashboard')
 
 def get_request_details_api(request, pk):
     try:
         req = ProcurementRequest.objects.get(pk=pk)
         suppliers = list(req.suppliers.all().values('name', 'email', 'phone', 'source_link', 'indiamart_rfq_sent'))
-        quotes = list(req.quotes.all().values('id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 'full_email_body'))
+        quotes = list(req.quotes.all().values(
+            'id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 
+            'full_email_body', 'quantity', 'subtotal', 'tax_amount', 'freight_charges', 'total_amount'
+        ))
         data = {
             'id': req.id, 'title': req.title, 'quantity': req.quantity,
             'specs': req.specs, 'status': req.status, 'source': req.source,
@@ -193,26 +267,17 @@ def get_request_details_api(request, pk):
 @csrf_exempt
 @require_POST
 def find_suppliers_api(request, pk):
-    try:
-        req = ProcurementRequest.objects.get(pk=pk)
-        req.status = 'agent-working'
-        req.save()
-        def run_scraper_in_thread():
-            command = [sys.executable, 'manage.py', 'scrape_suppliers', str(pk)]
-            subprocess.run(command)
-        thread = threading.Thread(target=run_scraper_in_thread)
-        thread.start()
+    """API endpoint for the manual flow (scrape only)."""
+    if start_supplier_scraping_agent(pk):
         return JsonResponse({'success': True, 'message': 'Sourcing agent started in background thread.'})
-    except ProcurementRequest.DoesNotExist:
+    else:
         return JsonResponse({'error': 'Request not found'}, status=404)
 
-# ✨ NEW: API View to re-run the sourcing agent for a specific product
 @csrf_exempt
 @require_POST
 def find_more_suppliers_api(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
-        # Find the most recent active request for this product to add new suppliers to
         active_request = ProcurementRequest.objects.filter(
             product=product, 
             status__in=['quotes-received', 'awaiting-approval', 'rfqs-sent']
@@ -221,17 +286,7 @@ def find_more_suppliers_api(request, product_id):
         if not active_request:
             return JsonResponse({'error': 'No active request found for this product to add suppliers to.'}, status=404)
         
-        # Set status to 'agent-working' to provide visual feedback on the dashboard
-        active_request.status = 'agent-working'
-        active_request.save()
-
-        # Re-use the existing scraper command in a background thread
-        def run_scraper_in_thread():
-            command = [sys.executable, 'manage.py', 'scrape_suppliers', str(active_request.id)]
-            subprocess.run(command)
-        
-        thread = threading.Thread(target=run_scraper_in_thread)
-        thread.start()
+        start_supplier_scraping_agent(active_request.id)
         
         return JsonResponse({'success': True, 'message': 'Agent has started searching for more suppliers in the background.'})
     except Product.DoesNotExist:
@@ -244,53 +299,12 @@ def find_more_suppliers_api(request, product_id):
 @require_POST
 def send_rfqs_api(request, pk):
     try:
-        req = ProcurementRequest.objects.get(pk=pk)
-        suppliers = req.suppliers.all()
-        if not suppliers.exists():
-            return JsonResponse({'error': 'No suppliers were found for this request.'}, status=400)
-        
         attachment = request.FILES.get('attachment')
-        
-        suppliers_with_email = suppliers.filter(email__isnull=False).exclude(email__exact='')
-        sent_via_email = 0
-        if suppliers_with_email.exists():
-            subject = f"Request for Quotation - {req.title} [REQ-{req.id}]"
-            message_body = (
-                f"Dear Supplier,\n\nWe are interested in procuring the following item:\n\n"
-                f"Product: {req.title}\n"
-                f"Quantity: {req.quantity}\n"
-                f"Specifications: {req.specs or 'As per standard'}\n\n"
-                f"Please provide your best quotation in a reply to this email.\n\n"
-                f"Thank you,\nProcunova Automated System"
-            )
-            for supplier in suppliers_with_email:
-                try:
-                    email = EmailMessage(
-                        subject,
-                        message_body,
-                        settings.DEFAULT_FROM_EMAIL,
-                        [supplier.email]
-                    )
-                    if attachment:
-                        attachment.seek(0)
-                        email.attach(attachment.name, attachment.read(), attachment.content_type)
-                    
-                    email.send()
-                    sent_via_email += 1
-                except Exception as e:
-                    print(f"Could not send email to {supplier.email}. Error: {e}")
-
-        req.status = 'rfqs-sent'
-        req.total_quotes_sent = req.suppliers.count()
-        req.save()
-
-        return JsonResponse({
-            'success': True, 
-            'message': f'Process complete. {sent_via_email} RFQs sent via email.', 
-            'sent_to_count': req.total_quotes_sent
-        })
-    except ProcurementRequest.DoesNotExist:
-        return JsonResponse({'error': 'Request not found.'}, status=404)
+        success, message = send_rfqs_for_request(pk, attachment)
+        if success:
+            return JsonResponse({'success': True, 'message': message})
+        else:
+            return JsonResponse({'error': message}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -320,9 +334,14 @@ def finalize_request_api(request, pk):
     try:
         data = json.loads(request.body)
         quote_id = data.get('quote_id')
+        final_quantity = data.get('final_quantity')
+
         proc_request = ProcurementRequest.objects.get(pk=pk)
         selected_quote = Quote.objects.get(pk=quote_id)
         
+        if final_quantity:
+            proc_request.quantity = final_quantity
+
         benchmark_price = Decimal('0.0')
         benchmark_source = "N/A"
 
@@ -373,20 +392,29 @@ def finalize_request_api(request, pk):
 
         supplier_name = selected_quote.supplier.name if selected_quote.supplier and selected_quote.supplier.name else "Supplier"
         product_name = proc_request.title
-        quantity = proc_request.quantity
         price = selected_quote.price
 
         email_prompt = f"""
-        Write a professional and polite confirmation email to a supplier named {supplier_name} 
-        informing them that their quotation for {product_name} has been selected and finalized.
+        You are an expert procurement assistant for a company named 'Kalika Enterprises'. 
+        Your task is to draft a professional purchase confirmation email.
 
-        Details:
+        The tone should be formal, clear, and appreciative. The email must serve as an official confirmation of the order.
+
+        **Instructions:**
+        1. Start with a clear and professional subject line like "Purchase Order Confirmation".
+        2. Address the supplier professionally by their name: {supplier_name}.
+        3. State clearly that their quotation has been accepted and you are confirming the purchase.
+        4. List the order details in a structured way (Product, Final Quantity, Price per unit).
+        5. Request the supplier to acknowledge receipt of this purchase order and provide an estimated dispatch date.
+        6. Conclude professionally. The email will be signed by 'Vishal Kumbharkar' of 'Kalika Enterprises'.
+
+        **Order Details:**
+        - Supplier Name: {supplier_name}
         - Product: {product_name}
-        - Quantity: {quantity}
-        - Final Price: {price}
+        - Final Order Quantity: {proc_request.quantity}
+        - Final Price per unit: ₹{price}
 
-        The tone should be appreciative and professional. 
-        Do NOT add unnecessary text, keep it clear and business-oriented.
+        Generate ONLY the body of the email.
         """
 
         from .utils import model
@@ -394,7 +422,6 @@ def finalize_request_api(request, pk):
             gemini_response = model.generate_content(email_prompt)
             email_body_generated = gemini_response.text.strip()
             
-            # 🔽 ADD THIS LINE TO REPLACE THE PLACEHOLDER
             email_body_generated = email_body_generated.replace('[Your Name/Company Name]', 'Vishal Kumbharkar\nKalika Enterprises')
 
         else:
@@ -402,7 +429,7 @@ def finalize_request_api(request, pk):
                 f"Dear {supplier_name},\n\n"
                 f"We are pleased to inform you that your quotation for {product_name} "
                 f"has been reviewed and finalized by our procurement team.\n\n"
-                f"Quantity: {quantity}\n"
+                f"Quantity: {proc_request.quantity}\n"
                 f"Final Price: {price}\n\n"
                 f"Thank you for your cooperation. We look forward to successful collaboration.\n"
             )
@@ -410,7 +437,7 @@ def finalize_request_api(request, pk):
         footer = """
         
         Thanks & Regards,  
-        Vishal Kumbharkar 
+        Vishal Kumbharkar 
         +91 9405536016  
         Manager System Developer  
 

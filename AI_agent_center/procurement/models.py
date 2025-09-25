@@ -40,7 +40,6 @@ class ProcurementRequest(models.Model):
     selected_quote = models.ForeignKey('Quote', related_name='chosen_for_request', on_delete=models.SET_NULL, null=True, blank=True)
     estimated_savings = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
     
-    # This field stores the source of the benchmark price for transparency
     benchmark_source = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
@@ -61,7 +60,16 @@ class Supplier(models.Model):
 class Quote(models.Model):
     procurement_request = models.ForeignKey(ProcurementRequest, related_name='quotes', on_delete=models.CASCADE)
     supplier = models.ForeignKey(Supplier, on_delete=models.CASCADE)
-    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    
+    # --- ADDED/MODIFIED fields ---
+    quantity = models.CharField(max_length=50, blank=True, null=True)
+    price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True) # This is the unit price
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    freight_charges = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    total_amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    # --- END of new fields ---
+
     lead_time_days = models.IntegerField(blank=True, null=True)
     payment_terms = models.CharField(max_length=100, blank=True, null=True)
     discount = models.CharField(max_length=100, blank=True, null=True)

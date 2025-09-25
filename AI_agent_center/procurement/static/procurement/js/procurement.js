@@ -17,6 +17,13 @@ document.addEventListener('DOMContentLoaded', () => {
         kanbanBoard: document.getElementById('kanban-board'),
         csrfToken: document.querySelector('[name=csrfmiddlewaretoken]').value,
         checkAllQuotesBtn: document.getElementById('check-all-quotes-btn'),
+        
+        // ✨ NEW: Finalize Modal Elements ✨
+        finalizeModal: document.getElementById('finalize-modal'),
+        cancelFinalizeBtn: document.getElementById('cancel-finalize-btn'),
+        confirmFinalizeBtn: document.getElementById('confirm-finalize-btn'),
+        finalQuantityInput: document.getElementById('final-quantity-input'),
+
 
         // --- State Management ---
         currentRequestData: null,
@@ -45,6 +52,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.checkAllQuotesBtn.addEventListener('click', () => this.runCheckAllRfqs());
             }
 
+            // ✨ NEW: Event Listeners for Finalize Modal ✨
+            this.cancelFinalizeBtn.addEventListener('click', () => this.finalizeModal.classList.add('hidden'));
+
             this.kanbanBoard.addEventListener('click', (e) => {
                 const card = e.target.closest('.kanban-card');
                 const deleteBtn = e.target.closest('.delete-request-btn');
@@ -72,10 +82,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const quoteId = e.target.dataset.quoteId;
                     this.showQuoteDetails(quoteId);
                 }
+                
+                // --- MODIFIED: Show finalize modal instead of directly calling API ---
                 if (e.target.matches('.finalize-request-btn')) {
                     const quoteId = e.target.dataset.quoteId;
                     const representativeId = this.currentRequestData.representative_request_id || this.currentRequestData.id;
-                    this.runFinalizeRequest(representativeId, quoteId);
+                    this.showFinalizeModal(representativeId, quoteId);
                 }
                 if (e.target.matches('#manual-rfq-btn')) {
                     this.runManualRfq(this.currentRequestData);
@@ -345,9 +357,27 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.addLog(`❌ Error checking for quotes: ${data.error}`);
             }
         },
+        
+        // ✨ NEW: Function to show the confirmation modal ✨
+        showFinalizeModal(requestId, quoteId) {
+            this.finalQuantityInput.value = this.currentRequestData.quantity; // Pre-fill with original quantity
+            this.finalizeModal.classList.remove('hidden');
 
-        async runFinalizeRequest(requestId, quoteId) {
-            this.addLog(`Finalizing request...`);
+            // Use .onclick to replace any previous listener
+            this.confirmFinalizeBtn.onclick = () => {
+                const finalQuantity = this.finalQuantityInput.value;
+                if (!finalQuantity) {
+                    alert('Please enter a final quantity.');
+                    return;
+                }
+                this.finalizeModal.classList.add('hidden');
+                this.runFinalizeRequest(requestId, quoteId, finalQuantity);
+            };
+        },
+
+        // --- MODIFIED: `runFinalizeRequest` now accepts a quantity ---
+        async runFinalizeRequest(requestId, quoteId, finalQuantity) {
+            this.addLog(`Finalizing request with quantity: <b>${finalQuantity}</b>...`);
             const response = await fetch(`/procurement/api/finalize-request/${requestId}/`, {
                 method: 'POST',
                 headers: {
@@ -355,12 +385,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     'X-CSRFToken': this.csrfToken
                 },
                 body: JSON.stringify({
-                    quote_id: quoteId
+                    quote_id: quoteId,
+                    final_quantity: finalQuantity // Send final quantity to backend
                 })
             });
             const data = await response.json();
             if (data.success) {
                 this.addLog(`✅ <b>Request Finalized!</b> Estimated savings: <b>₹${parseFloat(data.savings).toFixed(2)}</b>`);
+                this.addLog(`✉️ Confirmation email sent to supplier.`);
                 setTimeout(() => this.closeDrillDownModal(), 2000);
             } else {
                 this.addLog(`❌ Error: Could not finalize request. ${data.error || ''}`);
@@ -445,7 +477,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>`;
         },
 
-        // 🔄 MODIFIED: This function is now fixed to show the full RFQ draft.
         generateApprovalPanel(request) {
             const suppliers = request.suppliers || [];
             let supplierListHtml;
@@ -467,7 +498,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionButtonHtml = `<button id="manual-rfq-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg">Manually Mark as RFQ Sent</button>`;
             }
             
-            // ✨ NEW: Complete RFQ Draft HTML
             const rfqSubject = `Request for Quotation - ${request.title} [REQ-${request.id}]`;
             const rfqBody = `Dear Supplier,\n\nWe are interested in procuring the following item:\n\nProduct: ${request.title}\nQuantity: ${request.quantity}\n\nSpecifications:\n${request.specs || 'As per standard'}\n\nPlease provide your best quotation in a reply to this email.\n\nThank you,\nProcunova Automated System`;
 
@@ -502,7 +532,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (quotes.length === 1) {
                 const quote = quotes[0];
                 let benchmarkHtml = '';
-                if (request.benchmark_price && request.benchmark_source) {
+
+                if (request.benchmark_price && request.benchmark_source && request.benchmark_source !== 'AI Estimated Market Price') {
                     const benchmarkPrice = parseFloat(request.benchmark_price).toFixed(2);
                     const currentPrice = parseFloat(quote.price).toFixed(2);
                     const difference = parseFloat(request.benchmark_price) - parseFloat(quote.price);
@@ -604,6 +635,23 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         generateQuoteDetailView(quote) {
+             const hasInvoiceDetails = quote.subtotal || quote.tax_amount || quote.freight_charges || quote.total_amount;
+
+             let invoiceBreakdownHtml = '';
+             if (hasInvoiceDetails) {
+                 invoiceBreakdownHtml = `
+                    <div class="mt-6 border-t border-slate-700 pt-4">
+                        <h4 class="font-bold text-slate-300 mb-2">Invoice Summary</h4>
+                        <div class="space-y-2 text-sm bg-slate-800 p-4 rounded-lg">
+                            <div class="flex justify-between"><span class="text-slate-400">Subtotal:</span> <span class="font-semibold">₹${quote.subtotal ? parseFloat(quote.subtotal).toFixed(2) : '0.00'}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Freight Charges:</span> <span class="font-semibold">₹${quote.freight_charges ? parseFloat(quote.freight_charges).toFixed(2) : '0.00'}</span></div>
+                            <div class="flex justify-between"><span class="text-slate-400">Tax Amount (e.g., GST):</span> <span class="font-semibold">₹${quote.tax_amount ? parseFloat(quote.tax_amount).toFixed(2) : '0.00'}</span></div>
+                            <div class="flex justify-between border-t border-slate-600 mt-2 pt-2"><span class="font-bold text-lg">Grand Total:</span> <span class="font-bold text-lg text-green-400">₹${quote.total_amount ? parseFloat(quote.total_amount).toFixed(2) : 'N/A'}</span></div>
+                        </div>
+                    </div>
+                 `;
+             }
+
              return `
                 <div class="bg-slate-900 p-6 rounded-lg h-full flex flex-col">
                     <div class="flex justify-between items-start mb-4">
@@ -612,13 +660,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <button class="back-to-compare-btn bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg text-sm">← Back</button>
                     </div>
-                    <div class="grid grid-cols-4 gap-4 mb-4 text-center">
-                        <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Price</dt><dd class="font-bold text-lg text-green-400">₹${quote.price ? parseFloat(quote.price).toFixed(2) : 'N/A'}</dd></div>
+
+                    <h4 class="font-bold text-slate-300 mb-2">Line Item Details</h4>
+                    <div class="grid grid-cols-3 gap-4 mb-4 text-center">
+                        <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Quantity</dt><dd class="font-bold text-lg">${quote.quantity || 'N/A'}</dd></div>
+                        <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Unit Price</dt><dd class="font-bold text-lg text-green-400">₹${quote.price ? parseFloat(quote.price).toFixed(2) : 'N/A'}</dd></div>
                         <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Lead Time</dt><dd class="font-bold text-lg">${quote.lead_time_days || 'N/A'} days</dd></div>
-                        <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Payment</dt><dd class="font-bold text-lg">${quote.payment_terms || 'N/A'}</dd></div>
+                    </div>
+                     <div class="grid grid-cols-2 gap-4 mb-4 text-center">
+                        <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Payment Terms</dt><dd class="font-bold text-lg">${quote.payment_terms || 'N/A'}</dd></div>
                         <div class="bg-slate-800 p-3 rounded"><dt class="text-sm text-slate-400">Discount</dt><dd class="font-bold text-lg">${quote.discount || 'None'}</dd></div>
                     </div>
-                    <h4 class="font-bold text-slate-300 mb-2">Full Email Response:</h4>
+
+                    ${invoiceBreakdownHtml}
+
+                    <h4 class="font-bold text-slate-300 mb-2 mt-6">Full Email Response:</h4>
                     <div class="flex-grow overflow-y-auto bg-slate-800 p-4 rounded-md border border-slate-700">
                         <pre class="text-sm text-slate-300 whitespace-pre-wrap font-sans">${quote.full_email_body || 'Email body not available.'}</pre>
                     </div>
@@ -629,8 +685,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('close-modal-btn')?.addEventListener('click', () => {
                 this.closeDrillDownModal()
             });
-            // This button is dynamically added, so we don't attach listener here anymore
-            // It's handled by the main modalContentContainer listener
         },
     };
     app.init();

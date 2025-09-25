@@ -170,7 +170,26 @@
     <div id="modal-content-container" class="modal-content">
         </div>
 </div>
-{% csrf_token %} {% endblock %}
+
+<div id="finalize-modal" class="modal-backdrop hidden">
+    <div class="modal-content max-w-lg h-auto">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-4">Confirm Final Quantity</h2>
+            <p class="text-slate-400 mb-4">Please confirm the final quantity to be ordered. This will be included in the confirmation email to the supplier.</p>
+            <div>
+                <label for="final-quantity-input" class="block text-slate-400 mb-1">Final Order Quantity</label>
+                <input type="text" id="final-quantity-input" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex justify-end gap-4 mt-6">
+                <button type="button" id="cancel-finalize-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button type="button" id="confirm-finalize-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Confirm & Finalize</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %} 
+{% endblock %}
 
 {% block extra_js %}
 <script src="{% static 'procurement/js/procurement.js' %}"></script>

@@ -69,7 +69,7 @@
 
     <div class="mb-6 bg-slate-800 p-4 rounded-lg">
         <form method="get" action="">
-            <label for="product-filter" class="block text-slate-300 mb-2 font-bold">Filter by Product:</label>
+            <label for="product-filter" class="block text-slate-300 mb-2 font-bold">Filter by Product to see Price History:</label>
             <div class="flex gap-4">
                 <select name="product" id="product-filter" class="w-full">
                     <option value="">All Products</option>
@@ -82,10 +82,48 @@
             </div>
         </form>
     </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h3 class="font-bold text-slate-300">Total Savings (Filtered)</h3>
+            <p class="text-3xl font-bold text-green-400">₹{{ overall_total_savings|floatformat:2 }}</p>
+        </div>
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h3 class="font-bold text-slate-300">Products with Savings</h3>
+            <p class="text-3xl font-bold text-sky-400">{{ savings_data|length }}</p>
+        </div>
+    </div>
     
+    {% if selected_product_id and line_chart_data %}
     <div class="mb-8 bg-slate-800 p-6 rounded-lg">
-        <h2 class="text-xl font-bold text-white mb-4">Total Savings per Product</h2>
-        <canvas id="savingsChart"></canvas>
+        <h2 class="text-xl font-bold text-white mb-4">Historical Price Trend for: <span class="text-indigo-400">{{ selected_product_name }}</span></h2>
+        <div style="height: 350px;"> <canvas id="priceHistoryChart"></canvas>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="mb-8 bg-slate-800 p-6 rounded-lg">
+        <h2 class="text-xl font-bold text-white mb-4">Savings per Product (Statistics)</h2>
+        <div class="overflow-y-auto h-80">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="border-b border-slate-600">
+                        <th class="p-3">Product</th>
+                        <th class="p-3">Total Savings</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in savings_data %}
+                    <tr class="border-b border-slate-700 hover:bg-slate-700">
+                        <td class="p-3 font-semibold">{{ item.product__name }}</td>
+                        <td class="p-3 text-green-400 font-bold">₹{{ item.total_savings|floatformat:2 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="2" class="text-center p-4 text-slate-400">No savings data found for this filter.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -161,25 +199,79 @@
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <script>
-    // Initialize the savings chart
-    const ctx = document.getElementById('savingsChart').getContext('2d');
-    const savingsChart = new Chart(ctx, {
-        type: 'bar',
-        data: { /* ... chart data ... */ },
-        options: { /* ... chart options ... */ }
-    });
+    document.addEventListener('DOMContentLoaded', function() {
+        // ✨ NEW: Complete Chart.js implementation for the LINE chart ✨
+        {% if selected_product_id and line_chart_data %}
+        const ctx = document.getElementById('priceHistoryChart').getContext('2d');
+        const lineChartLabels = JSON.parse('{{ line_chart_data.labels|safe }}');
+        const lineChartValues = JSON.parse('{{ line_chart_data.values|safe }}');
 
-    $(document).ready(function() {
+        if (lineChartLabels.length > 0) {
+            const priceHistoryChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: lineChartLabels,
+                    datasets: [{
+                        label: 'Finalized Price (₹)',
+                        data: lineChartValues,
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)', // indigo-500 with opacity
+                        borderColor: 'rgba(129, 140, 248, 1)', // indigo-400
+                        borderWidth: 2,
+                        pointBackgroundColor: '#fff',
+                        pointRadius: 4,
+                        tension: 0.1 // Makes the line slightly curved
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            beginAtZero: false, // Prices don't always start at 0
+                            ticks: { 
+                                color: '#94a3b8', // slate-400
+                                callback: function(value, index, values) {
+                                    return '₹' + value;
+                                }
+                            },
+                            grid: { color: '#334155' } // slate-700
+                        },
+                        x: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { display: false }
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleColor: '#e2e8f0',
+                            bodyColor: '#cbd5e1',
+                            callbacks: {
+                                label: function(context) {
+                                    return ` Price: ₹${context.raw.toFixed(2)}`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+        {% endif %}
+
+        // Initialize Select2
         $('#product-filter').select2();
 
-        // === MODAL AND SEARCH LOGIC (UPDATED WITH CHECKBOXES) ===
+        // MODAL AND SEARCH LOGIC
         const vendorModal = $('#vendor-modal');
         const modalTitle = $('#modal-title');
         const modalVendorList = $('#modal-vendor-list');
         const searchInput = $('#vendor-search-input');
         const bulkRequestBtn = $('#bulk-rerequest-btn');
 
-        // --- 1. Open Modal on Product Click ---
+        // Open Modal on Product Click
         $('#product-list-container').on('click', '.product-item', function(e) {
             e.preventDefault();
             const productName = $(this).data('product-name');
@@ -219,11 +311,11 @@
 
             modalVendorList.html(tableHtml);
             searchInput.val('');
-            bulkRequestBtn.prop('disabled', true); // Disable button on open
+            bulkRequestBtn.prop('disabled', true);
             vendorModal.removeClass('hidden');
         });
 
-        // --- 2. Close Modal ---
+        // Close Modal
         $('#close-modal-btn, #vendor-modal').on('click', function(e) {
             if (e.target.id === 'vendor-modal' || e.target.id === 'close-modal-btn' || $(e.target).closest('#close-modal-btn').length) {
                 vendorModal.addClass('hidden');
@@ -231,7 +323,7 @@
         });
         $('.modal-content').on('click', function(e) { e.stopPropagation(); });
 
-        // --- 3. Search/Filter Logic ---
+        // Search/Filter Logic
         searchInput.on('keyup', function() {
             const searchTerm = $(this).val().toLowerCase();
             modalVendorList.find('tbody tr').each(function() {
@@ -240,7 +332,7 @@
             });
         });
 
-        // --- 4. Checkbox Logic ---
+        // Checkbox Logic
         function updateBulkRequestState() {
             const allCheckboxes = modalVendorList.find('.vendor-checkbox');
             const checkedCheckboxes = allCheckboxes.filter(':checked');
@@ -259,7 +351,7 @@
             updateBulkRequestState();
         });
 
-        // --- 5. Bulk Re-Request Button Action ---
+        // Bulk Re-Request Button Action
         bulkRequestBtn.on('click', function() {
             const checkedEmails = [];
             modalVendorList.find('.vendor-checkbox:checked').each(function() {
@@ -271,7 +363,6 @@
                 const productName = modalTitle.text().replace('Vendors for ', '');
                 const subject = `Request for Quotation for ${productName}`;
                 const bcc = checkedEmails.join(',');
-                // Use BCC to hide recipients from each other
                 window.location.href = `mailto:?subject=${encodeURIComponent(subject)}&bcc=${encodeURIComponent(bcc)}`;
             } else {
                 alert('Please select at least one vendor.');
