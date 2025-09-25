@@ -17,7 +17,7 @@ from django.contrib import messages
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
 from .utils import process_incoming_quotes, get_ai_benchmark_price, get_ai_response, send_rfqs_for_request
 
-# Helper for the original manual flow (find suppliers -> manual approval)
+# EXPLANATION: Yeh helper function sirf supplier scrape karta hai aur status ko 'awaiting-approval' set karta hai.
 def start_supplier_scraping_agent(request_id):
     """Starts the scrape_suppliers management command for a given request ID in a background thread."""
     try:
@@ -36,6 +36,7 @@ def start_supplier_scraping_agent(request_id):
         print(f"Could not start agent for request ID {request_id}: DoesNotExist.")
         return False
 
+# EXPLANATION: Yeh helper function ab bulk upload mein istemal nahi hoga.
 def start_bulk_processing_agent(request_id):
     """Starts the new end-to-end management command for a given request ID in a background thread."""
     try:
@@ -228,11 +229,7 @@ def bulk_upload_api(request):
         for row in reader:
             normalized_row = {key.strip().lower(): value for key, value in row.items()}
             
-            # ========== THIS IS THE ONLY LINE THAT HAS CHANGED ==========
-            # It now checks for 'product title' OR 'product description'
             title = normalized_row.get('product title') or normalized_row.get('product description')
-            # =============================================================
-
             quantity = normalized_row.get('quantity', 'N/A')
             specs = normalized_row.get('specifications', '')
             
@@ -249,7 +246,12 @@ def bulk_upload_api(request):
                 title=title, product=product, quantity=quantity,
                 specs=specs, source='Bulk Upload', status='new-request'
             )
-            start_bulk_processing_agent(new_request.id)
+            
+            # ========== THIS IS THE ONLY CHANGE IN THIS FUNCTION ==========
+            # Ab yeh sirf supplier scraping agent ko call karega, full automation ko nahi.
+            start_supplier_scraping_agent(new_request.id)
+            # =============================================================
+
             existing_titles.add(title)
             new_requests_count += 1
 
