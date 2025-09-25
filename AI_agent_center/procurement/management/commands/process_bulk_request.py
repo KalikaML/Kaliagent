@@ -21,10 +21,11 @@ class Command(BaseCommand):
             # --- Step 1: Scrape for suppliers ---
             self.stdout.write(f"[{time.ctime()}] Running supplier scraping agent...")
             
-            # Use call_command to run the existing scrape_suppliers command
+            # EXPLANATION: It calls the existing scrape_suppliers command to find vendors.
+            # The request status will be changed to 'awaiting-approval' by this command.
             call_command('scrape_suppliers', str(request_id))
             
-            # Refresh request object from DB to get the latest state
+            # Refresh request object from DB to get the latest state after scraping is done
             request.refresh_from_db()
             
             if request.status != 'awaiting-approval':
@@ -36,7 +37,8 @@ class Command(BaseCommand):
             # --- Step 2: Automatically send RFQs ---
             self.stdout.write(f"[{time.ctime()}] Automatically sending RFQs...")
             
-            # Call the logic from utils to send RFQs
+            # EXPLANATION: After scraping, it immediately calls the function to send RFQ emails.
+            # There is no manual approval step in this automated flow.
             success, message = send_rfqs_for_request(request_id)
             
             if success:

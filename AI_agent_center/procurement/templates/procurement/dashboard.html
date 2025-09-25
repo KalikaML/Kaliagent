@@ -6,9 +6,11 @@
 {% block extra_css %}
 <style>
     .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding: 1rem; min-height: calc(100vh - 200px); }
-    .kanban-column { flex: 1 0 300px; min-width: 300px; background-color: #1e293b; border-radius: 0.75rem; padding: 1rem; display: flex; flex-direction: column; }
+    /* EXPLANATION: Column width badha di gayi hai (300px -> 340px) */
+    .kanban-column { flex: 1 0 340px; min-width: 340px; background-color: #1e293b; border-radius: 0.75rem; padding: 1rem; display: flex; flex-direction: column; }
     .kanban-column-title { font-weight: 700; font-size: 1.125rem; padding-bottom: 1rem; border-bottom: 2px solid #334155; display: flex; align-items: center; gap: 0.5rem; }
-    .kanban-cards { flex-grow: 1; display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; }
+    /* EXPLANATION: Yahan overflow-y: auto; add kiya gaya hai taaki vertical scrollbar aa sake */
+    .kanban-cards { flex-grow: 1; display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; overflow-y: auto; padding-right: 8px; }
     .kanban-card { background-color: #334155; border-radius: 0.5rem; padding: 1rem; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid transparent; }
     .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.25); }
     .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; }
@@ -30,25 +32,42 @@
 
 <div id="app" class="p-4 md:p-8 h-screen flex flex-col">
     <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
-    <div>
-        <h1 class="text-3xl font-black text-white">Procunova</h1>
-        <p class="text-slate-400">Your AI Procurement Command Center</p>
+        <div>
+            <h1 class="text-3xl font-black text-white">Procunova</h1>
+            <p class="text-slate-400">Your AI Procurement Command Center</p>
+        </div>
+        <div class="flex items-center gap-4 mt-4 md:mt-0">
+            <a href="{% url 'procurement:analysis' %}" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                📊 Analysis Dashboard
+            </a>
+            <button id="check-all-quotes-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                Check for New Quotes
+            </button>
+            <button id="bulk-upload-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                Bulk Upload
+            </button>
+            <button id="add-request-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                + Add New Request
+            </button>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="mb-6 space-y-3">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg
+            {% if message.tags == 'success' %} bg-green-900/50 text-green-300 border border-green-700
+            {% elif message.tags == 'info' %} bg-sky-900/50 text-sky-300 border border-sky-700
+            {% elif message.tags == 'warning' %} bg-amber-900/50 text-amber-300 border border-amber-700
+            {% elif message.tags == 'error' %} bg-red-900/50 text-red-300 border border-red-700
+            {% else %} bg-slate-700 text-slate-300 border border-slate-600
+            {% endif %}"
+            role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
     </div>
-    <div class="flex items-center gap-4 mt-4 md:mt-0">
-        <a href="{% url 'procurement:analysis' %}" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-            📊 Analysis Dashboard
-        </a>
-        <button id="check-all-quotes-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-            Check for New Quotes
-        </button>
-        <button id="bulk-upload-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-            Bulk Upload
-        </button>
-        <button id="add-request-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
-            + Add New Request
-        </button>
-    </div>
-</header>
+    {% endif %}
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div class="bg-slate-800 p-4 rounded-lg">

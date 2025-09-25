@@ -13,6 +13,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
 from django.core.mail import EmailMessage, send_mail
 from django.db.models import Sum, Avg, Count
+from django.contrib import messages
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
 from .utils import process_incoming_quotes, get_ai_benchmark_price, get_ai_response, send_rfqs_for_request
 
@@ -35,7 +36,6 @@ def start_supplier_scraping_agent(request_id):
         print(f"Could not start agent for request ID {request_id}: DoesNotExist.")
         return False
 
-# ✨ NEW: Helper function for the fully automated bulk upload flow ✨
 def start_bulk_processing_agent(request_id):
     """Starts the new end-to-end management command for a given request ID in a background thread."""
     try:
@@ -208,43 +208,65 @@ def add_request_api(request):
     )
     return JsonResponse({'success': True, 'id': new_request.id})
 
-# --- MODIFIED: bulk_upload_api ---
 @require_POST
 def bulk_upload_api(request):
     if 'file' not in request.FILES:
+        messages.error(request, 'No file was uploaded. Please select a CSV file.')
         return redirect('procurement:dashboard')
     
     uploaded_file = request.FILES['file']
     existing_titles = set(ProcurementRequest.objects.values_list('title', flat=True))
+    
+    new_requests_count = 0
+    skipped_existing_count = 0
+    skipped_format_count = 0
     
     try:
         decoded_file = uploaded_file.read().decode('utf-8').splitlines()
         reader = csv.DictReader(decoded_file)
         
         for row in reader:
-            # Assumes your CSV has columns: 'Product Title', 'Quantity', 'Specifications'
-            title = row.get('Product Title')
+            normalized_row = {key.strip().lower(): value for key, value in row.items()}
             
-            if title and title not in existing_titles:
-                product, _ = Product.objects.get_or_create(name=title)
-                
-                new_request = ProcurementRequest.objects.create(
-                    title=title,
-                    product=product,
-                    quantity=row.get('Quantity', 'N/A'),
-                    specs=row.get('Specifications', ''),
-                    source='Bulk Upload',
-                    status='new-request'
-                )
-                
-                # Use the new agent that handles the full end-to-end process
-                start_bulk_processing_agent(new_request.id)
+            # ========== THIS IS THE ONLY LINE THAT HAS CHANGED ==========
+            # It now checks for 'product title' OR 'product description'
+            title = normalized_row.get('product title') or normalized_row.get('product description')
+            # =============================================================
 
-                existing_titles.add(title)
+            quantity = normalized_row.get('quantity', 'N/A')
+            specs = normalized_row.get('specifications', '')
+            
+            if not title:
+                skipped_format_count += 1
+                continue
+
+            if title in existing_titles:
+                skipped_existing_count += 1
+                continue
+            
+            product, _ = Product.objects.get_or_create(name=title)
+            new_request = ProcurementRequest.objects.create(
+                title=title, product=product, quantity=quantity,
+                specs=specs, source='Bulk Upload', status='new-request'
+            )
+            start_bulk_processing_agent(new_request.id)
+            existing_titles.add(title)
+            new_requests_count += 1
 
     except Exception as e:
         print(f"Error processing bulk upload file '{uploaded_file.name}': {e}")
+        messages.error(request, f"An error occurred while processing the file: {e}")
+        return redirect('procurement:dashboard')
     
+    if new_requests_count > 0:
+        messages.success(request, f"Successfully started processing for {new_requests_count} new request(s). They will appear in 'Agent Working'.")
+    if skipped_existing_count > 0:
+        messages.info(request, f"Skipped {skipped_existing_count} request(s) because they already exist in the system.")
+    if skipped_format_count > 0:
+        messages.warning(request, f"Skipped {skipped_format_count} row(s) due to missing 'Product Title' or 'Product Description' column.")
+    if new_requests_count == 0 and skipped_existing_count == 0 and skipped_format_count == 0:
+        messages.warning(request, "The uploaded file was empty or did not contain any processable rows.")
+
     return redirect('procurement:dashboard')
 
 def get_request_details_api(request, pk):
