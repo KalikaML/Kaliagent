@@ -247,10 +247,12 @@ def bulk_upload_api(request):
                 specs=specs, source='Bulk Upload', status='new-request'
             )
             
-            # ========== THIS IS THE ONLY CHANGE IN THIS FUNCTION ==========
-            # Ab yeh sirf supplier scraping agent ko call karega, full automation ko nahi.
+            # ========== CLARIFICATION OF LOGIC ==========
+            # The following line starts the automated supplier search for each new request from the CSV.
+            # This agent's final step is to set the status to 'awaiting-approval'.
+            # This ensures the process automatically stops for your manual review, as you requested.
             start_supplier_scraping_agent(new_request.id)
-            # =============================================================
+            # ============================================
 
             existing_titles.add(title)
             new_requests_count += 1
