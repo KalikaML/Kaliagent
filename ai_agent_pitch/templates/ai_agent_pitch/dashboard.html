@@ -1,0 +1,200 @@
+{% extends "core/base.html" %}
+{% block content %}
+<div style="height: 100vh; overflow-y: auto; padding-bottom: 60px;">
+    <div class="w-full bg-slate-900 text-slate-300 p-4 sm:p-6 lg:p-8">
+        <h1 class="text-4xl font-bold text-white mb-6 text-center animate-fade-in">Email Campaign Dashboard</h1>
+        
+        <!-- Campaign Overview Table -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-6 animate-fade-in">
+            <h2 class="text-xl font-semibold text-white mb-4">Campaign Overview</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-slate-300">
+                    <thead>
+                        <tr class="bg-slate-700">
+                            <th class="border border-slate-600 p-2 text-left">Subject</th>
+                            <th class="border border-slate-600 p-2 text-left">Sent At</th>
+                            <th class="border border-slate-600 p-2 text-left">Total Sent</th>
+                            <th class="border border-slate-600 p-2 text-left">Opened</th>
+                            <th class="border border-slate-600 p-2 text-left">Clicked</th>
+                            <th class="border border-slate-600 p-2 text-left">Failed</th>
+                            <th class="border border-slate-600 p-2 text-left">Open Rate</th>
+                        </tr>
+                    </thead>
+                    <tbody id="campaign-table">
+                        {% for campaign in page_obj %}
+                        <tr class="hover:bg-slate-600">
+                            <td class="border border-slate-600 p-2">{{ campaign.subject }}</td>
+                            <td class="border border-slate-600 p-2">{{ campaign.sent_at|date:"Y-m-d H:i" }}</td>
+                            <td class="border border-slate-600 p-2">{{ campaign.total_sent }}</td>
+                            <td class="border border-slate-600 p-2">{{ campaign.total_opened }}</td>
+                            <td class="border border-slate-600 p-2">{{ campaign.total_clicked }}</td>
+                            <td class="border border-slate-600 p-2">{{ campaign.total_failed }}</td>
+                            <td class="border border-slate-600 p-2">{{ campaign.open_rate|floatformat:2 }}%</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="border border-slate-600 p-2 text-center text-slate-400">No campaigns found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <!-- Pagination -->
+            <div class="mt-4 flex justify-center">
+                <nav class="inline-flex rounded-lg shadow">
+                    {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}" class="px-4 py-2 bg-purple-600 text-white rounded-l-lg hover:bg-purple-500">Previous</a>
+                    {% endif %}
+                    <span class="px-4 py-2 bg-slate-700 text-slate-300">Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+                    {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}" class="px-4 py-2 bg-purple-600 text-white rounded-r-lg hover:bg-purple-500">Next</a>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+
+        <!-- Gmail Recipients Table -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-6 animate-fade-in">
+            <h2 class="text-xl font-semibold text-white mb-4">Gmail Recipients</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-slate-300">
+                    <thead>
+                        <tr class="bg-slate-700">
+                            <th class="border border-slate-600 p-2 text-left">Campaign Subject</th>
+                            <th class="border border-slate-600 p-2 text-left">Recipient Name</th>
+                            <th class="border border-slate-600 p-2 text-left">Email</th>
+                            <th class="border border-slate-600 p-2 text-left">Status</th>
+                            <th class="border border-slate-600 p-2 text-left">Opened At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for recipient in gmail_recipients %}
+                        <tr class="hover:bg-slate-600">
+                            <td class="border border-slate-600 p-2">{{ recipient.campaign.subject }}</td>
+                            <td class="border border-slate-600 p-2">{{ recipient.name }}</td>
+                            <td class="border border-slate-600 p-2">{{ recipient.email }}</td>
+                            <td class="border border-slate-600 p-2">{{ recipient.status|title }}</td>
+                            <td class="border border-slate-600 p-2">{{ recipient.opened_at|date:"Y-m-d H:i"|default:"Not opened" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="border border-slate-600 p-2 text-center text-slate-400">No Gmail recipients found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Campaign Metrics Chart -->
+        <div class="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-12 animate-fade-in">
+            <h2 class="text-xl font-semibold text-white mb-4">Campaign Metrics</h2>
+            <div class="relative" style="min-height: 400px; height: 400px;">
+                <canvas id="campaignChart" width="400" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        fetch('{% url "pitch:get_campaigns" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                const campaigns = data.campaigns;
+                const labels = campaigns.map(c => c.subject);
+                const sentData = campaigns.map(c => c.total_sent);
+                const openedData = campaigns.map(c => c.total_opened);
+                const clickedData = campaigns.map(c => c.total_clicked);
+                const failedData = campaigns.map(c => c.total_failed);
+
+                const ctx = document.getElementById('campaignChart').getContext('2d');
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Sent',
+                                data: sentData,
+                                backgroundColor: 'rgba(139, 92, 246, 0.5)', // Purple-600
+                                borderColor: 'rgba(139, 92, 246, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Opened',
+                                data: openedData,
+                                backgroundColor: 'rgba(6, 182, 212, 0.5)', // Cyan-600
+                                borderColor: 'rgba(6, 182, 212, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Clicked',
+                                data: clickedData,
+                                backgroundColor: 'rgba(20, 184, 166, 0.5)', // Teal-600
+                                borderColor: 'rgba(20, 184, 166, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Failed',
+                                data: failedData,
+                                backgroundColor: 'rgba(244, 63, 94, 0.5)', // Rose-600
+                                borderColor: 'rgba(244, 63, 94, 1)',
+                                borderWidth: 1
+                            }
+                        ]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        },
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            tooltip: {
+                                enabled: true
+                            }
+                        }
+                    }
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Error loading chart:', error);
+            fetch('/log-error/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken')
+                },
+                body: JSON.stringify({ error: 'Chart.js error: ' + error.message })
+            });
+        });
+    });
+</script>
+{% endblock %}

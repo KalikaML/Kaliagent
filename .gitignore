@@ -1,0 +1,33 @@
+# .gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*.so
+
+# Virtual environment
+env/
+venv/
+ENV/
+.venv/
+
+# Django
+*.log
+db.sqlite3
+media/
+staticfiles/
+
+# IDE & System Files
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Environment variables - IMPORTANT
+.env
+.env.*
+
+# Build artifacts
+/dist
+/build
