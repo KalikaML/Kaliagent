@@ -1,0 +1,33 @@
+# Django Web Framework
+Django
+psycopg2
+
+# Environment Variables
+python-dotenv~=1.0
+
+# Web Scraping & HTTP Requests
+google-search-results~=2.4
+requests
+playwright==1.49.1
+beautifulsoup4==4.12.2
+httpx
+
+# Google & AI Libraries
+google-generativeai
+google-api-python-client
+google-auth-oauthlib
+
+# File & Document Processing
+pytesseract==0.3.13
+Pillow
+PyMuPDF==1.2.63
+pdfplumber==0.11.5
+pdfminer.six==20231228
+openpyxl
+xlrd
+
+# Video & Subtitles
+webvtt-py
+
+# Utilities
+pytz==2023.3.post1
