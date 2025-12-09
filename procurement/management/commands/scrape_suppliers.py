@@ -13,6 +13,7 @@ from django.conf import settings
 from serpapi import GoogleSearch
 from procurement.models import ProcurementRequest, Supplier, Product, MasterVendor
 from asgiref.sync import sync_to_async
+from procurement.utils import append_suppliers_to_sheet # 👈 IMPORT YOUR NEW FUNCTION
 
 # --- Helper Functions for Scraping ---
 
@@ -84,7 +85,7 @@ def search_with_searxng(query: str, num_results: int = 10, start_index: int = 0)
     except json.JSONDecodeError:
         print(f"   - ❌ Error decoding JSON response from SearXNG.")
         return []
-
+#store query 
 # ✨ NEW: Helper function to scrape product specifications from an IndiaMart product page
 async def scrape_product_specifications(page: Page) -> str | None:
     print("      - Scraping for detailed product specifications...")
@@ -144,10 +145,15 @@ def get_procurement_request(request_id: int):
 
 @sync_to_async
 def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list):
-    proc_request.suppliers.all().delete() # Note: Consider if you want to append instead of replace
+    proc_request.suppliers.all().delete()
     saved_count = 0
     seen_emails = set()
     product = proc_request.product
+    
+    newly_saved_suppliers_for_sheet = []
+
+    # 👈 DEBUG: Check how many suppliers were received from the scraper
+    print(f"\n[DEBUG] save_suppliers_to_db function received {len(suppliers_data)} suppliers.")
 
     for data in suppliers_data:
         email = data.get('email')
@@ -171,6 +177,21 @@ def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list)
             )
             seen_emails.add(email)
             saved_count += 1
+            newly_saved_suppliers_for_sheet.append(data)
+
+    # 👈 DEBUG: Check how many suppliers are ready to be written to Google Sheets
+    print(f"[DEBUG] {len(newly_saved_suppliers_for_sheet)} suppliers are ready to be written to Google Sheets.")
+
+    if newly_saved_suppliers_for_sheet:
+        product_name = product.name if product else proc_request.title
+        try:
+            append_suppliers_to_sheet(product_name, newly_saved_suppliers_for_sheet)
+        except Exception as e:
+            print(f"   ❌ Failed to write to Google Sheets: {e}")
+    else:
+        # 👈 DEBUG: Print a message if no new suppliers are available
+        print("[DEBUG] No new suppliers to process, so the Google Sheet function was not called.")
+
     return saved_count
 
 # ✨ NEW: Async function to update the request's specifications

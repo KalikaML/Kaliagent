@@ -32,3 +32,5 @@ Thumbs.db
 # Environment variables
 .env
 .env.*
+config
+gsheet_key_suppliers_list.json

@@ -15,6 +15,10 @@ GEMINI_API_KEY = os.getenv('GEMINI_API_KEY')
 SECRET_KEY = os.getenv('SECRET_KEY')
 SERPAPI_API_KEY = os.getenv('SERPAPI_API_KEY')
 
+# Google Sheets Configuration
+GOOGLE_SHEETS_CREDENTIALS_FILE = os.path.join(BASE_DIR, 'config', 'gsheet_key_suppliers_list.json')
+GOOGLE_SHEET_ID = '1ptrQDPIwdzBDrqgjTpkS4wp9CRFNU9qQ3GS2e-AQHnU'
+
 
 
 

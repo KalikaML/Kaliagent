@@ -12,6 +12,10 @@ import google.generativeai as genai
 from django.conf import settings
 from django.core.mail import EmailMessage
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
+import gspread
+from google.oauth2.service_account import Credentials
+from django.conf import settings
+from datetime import datetime
 
 try:
     import openpyxl
@@ -302,3 +306,54 @@ def process_incoming_quotes():
     except Exception as e:
         print(f"An error occurred during quote processing: {e}")
     return new_quotes_found
+
+# NEW FUNCTION TO WRITE TO GOOGLE SHEETS
+def append_suppliers_to_sheet(product_name, suppliers_data):
+    """
+    Appends a list of supplier data to a single master worksheet in Google Sheets.
+    It adds the product name in the first column for each supplier.
+    """
+    if not suppliers_data:
+        print("   [GSHEETS] No new supplier data to append.")
+        return
+
+    try:
+        scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        creds = Credentials.from_service_account_file(settings.GOOGLE_SHEETS_CREDENTIALS_FILE, scopes=scopes)
+        client = gspread.authorize(creds)
+        spreadsheet = client.open_by_key(settings.GOOGLE_SHEET_ID)
+
+        MASTER_SHEET_NAME = "All Suppliers Data"
+
+        try:
+            worksheet = spreadsheet.worksheet(MASTER_SHEET_NAME)
+        except gspread.WorksheetNotFound:
+            worksheet = spreadsheet.add_worksheet(title=MASTER_SHEET_NAME, rows="1000", cols="20")
+
+        headers = ['Product Name', 'Supplier Name', 'Email', 'Phone', 'Source Link', 'Scraped At']
+        existing_headers = worksheet.get('A1:F1')
+        if not existing_headers or not existing_headers[0] or existing_headers[0] != headers:
+            worksheet.append_row(headers)
+
+        # This line will now work correctly
+        now_str = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        rows_to_append = []
+        for supplier in suppliers_data:
+            row = [
+                product_name,
+                supplier.get('name', 'N/A'),
+                supplier.get('email', 'N/A'),
+                supplier.get('phone', 'N/A'),
+                supplier.get('source_link', 'N/A'),
+                now_str
+            ]
+            rows_to_append.append(row)
+
+        worksheet.append_rows(rows_to_append)
+        print(f"   [GSHEETS] ✅ Successfully appended {len(rows_to_append)} rows for '{product_name}' to master sheet.")
+
+    except Exception as e:
+        print(f"   [GSHEETS] ❌ An unexpected error occurred: {e}")

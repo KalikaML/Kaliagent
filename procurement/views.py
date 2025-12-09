@@ -225,13 +225,20 @@ def bulk_upload_api(request):
     try:
         decoded_file = uploaded_file.read().decode('utf-8').splitlines()
         reader = csv.DictReader(decoded_file)
-        
+        # Handling kalika enterprises specific format to convert below given format 
         for row in reader:
             normalized_row = {key.strip().lower(): value for key, value in row.items()}
+            print('Normalized Row:', normalized_row)
             
-            title = normalized_row.get('product title') or normalized_row.get('product description')
-            quantity = normalized_row.get('quantity', 'N/A')
-            specs = normalized_row.get('specifications', '')
+            # title = normalized_row.get('product title') or normalized_row.get('product description')
+            # quantity = normalized_row.get('quantity', 'N/A')
+            # specs = normalized_row.get('specifications', '')
+
+            title = normalized_row.get('item description') #or normalized_row.get('product description')
+            quantity = normalized_row.get('quantity ordered', 'N/A')
+            specs = normalized_row.get('supplier item', '')
+
+            print('Processing row:', title, quantity, specs)
             
             if not title:
                 skipped_format_count += 1

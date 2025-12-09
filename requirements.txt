@@ -1,6 +1,6 @@
 # Django Web Framework
 Django
-psycopg2
+psycopg2-binary
 
 # Environment Variables
 python-dotenv~=1.0
@@ -16,11 +16,13 @@ httpx
 google-generativeai
 google-api-python-client
 google-auth-oauthlib
+gspread
+google-auth-oauthlib
 
 # File & Document Processing
 pytesseract==0.3.13
 Pillow
-PyMuPDF==1.2.63
+PyMuPDF
 pdfplumber==0.11.5
 pdfminer.six==20231228
 openpyxl
