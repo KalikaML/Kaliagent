@@ -1,0 +1,56 @@
+{% extends "core/base.html" %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<div class="w-full min-h-screen flex flex-col items-center bg-slate-900 py-10 px-4 sm:px-8">
+    <header class="w-full max-w-7xl flex justify-between items-center mb-10">
+        <h1 class="text-3xl font-bold text-white">Admin Dashboard</h1>
+        <div>
+            <a href="{% url 'core:agent_selector' %}" class="bg-cyan-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-cyan-600 transition-colors mr-4">
+                Back to Agent Selector
+            </a>
+            <a href="{% url 'core:logout' %}" class="bg-red-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-red-700 transition-colors">
+                Logout
+            </a>
+        </div>
+    </header>
+
+    <div class="w-full max-w-7xl bg-slate-800/50 border border-slate-700 rounded-2xl p-8">
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold text-white mb-4">User Statistics</h2>
+            <div class="bg-slate-700 p-6 rounded-lg">
+                <p class="text-lg text-slate-300">Total Registered Users: <span class="font-bold text-cyan-400 text-2xl">{{ total_users }}</span></p>
+            </div>
+        </div>
+
+        <div>
+            <h2 class="text-2xl font-bold text-white mb-4">User List</h2>
+            <div class="overflow-x-auto">
+                <table class="min-w-full bg-slate-800 rounded-lg">
+                    <thead class="bg-slate-700">
+                        <tr>
+                            <th class="text-left py-3 px-4 text-slate-300 font-semibold text-sm">Username</th>
+                            <th class="text-left py-3 px-4 text-slate-300 font-semibold text-sm">Email</th>
+                            <th class="text-left py-3 px-4 text-slate-300 font-semibold text-sm">Date Joined</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-slate-400">
+                        {% for u in users %}
+                        <tr class="border-b border-slate-700 hover:bg-slate-700/50">
+                            <td class="py-3 px-4">{{ u.username }}</td>
+                            <td class="py-3 px-4">{{ u.email }}</td>
+                            <td class="py-3 px-4">{{ u.date_joined|date:"d M, Y H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center py-4">No users found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,215 @@
+{% extends "core/base.html" %}
+{% load static %}
+
+{% block title %}Procurement AI Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .kanban-board { display: flex; gap: 1rem; overflow-x: auto; padding: 1rem; min-height: calc(100vh - 200px); }
+    /* EXPLANATION: Column width badha di gayi hai (300px -> 340px) */
+    .kanban-column { flex: 1 0 340px; min-width: 340px; background-color: #1e293b; border-radius: 0.75rem; padding: 1rem; display: flex; flex-direction: column; }
+    .kanban-column-title { font-weight: 700; font-size: 1.125rem; padding-bottom: 1rem; border-bottom: 2px solid #334155; display: flex; align-items: center; gap: 0.5rem; }
+    /* EXPLANATION: Yahan overflow-y: auto; add kiya gaya hai taaki vertical scrollbar aa sake */
+    .kanban-cards { flex-grow: 1; display: flex; flex-direction: column; gap: 1rem; margin-top: 1rem; overflow-y: auto; padding-right: 8px; }
+    .kanban-card { background-color: #334155; border-radius: 0.5rem; padding: 1rem; cursor: pointer; transition: all 0.2s ease; border-left: 4px solid transparent; }
+    .kanban-card:hover { transform: translateY(-2px); box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3), 0 4px 6px -2px rgba(0,0,0,0.25); }
+    .modal-backdrop { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(15, 23, 42, 0.8); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 50; }
+    .modal-content { background-color: #1e293b; border-radius: 0.75rem; width: 90%; max-width: 1200px; height: 90vh; overflow-y: auto; display: flex; flex-direction: column; }
+    .blinking-dot { height: 10px; width: 10px; background-color: #fbbf24; border-radius: 50%; display: inline-block; animation: blink-animation 1.5s infinite; }
+    @keyframes blink-animation { 0%, 100% { opacity: 1 } 50% { opacity: 0.3 } }
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1e293b; }
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'core:agent_selector' %}" class="absolute top-4 left-4 z-50 flex items-center gap-2 bg-slate-700/50 hover:bg-slate-600/80 text-white font-semibold py-2 px-4 rounded-lg transition-colors">
+    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+    Back to Agents
+</a>
+
+<div id="app" class="p-4 md:p-8 h-screen flex flex-col">
+    <header class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+        <div>
+            <h1 class="text-3xl font-black text-white">Procunova</h1>
+            <p class="text-slate-400">Your AI Procurement Command Center</p>
+        </div>
+        <div class="flex items-center gap-4 mt-4 md:mt-0">
+            <a href="{% url 'procurement:analysis' %}" class="bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                📊 Analysis Dashboard
+            </a>
+            <button id="check-all-quotes-btn" class="bg-teal-600 hover:bg-teal-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                Check for New Quotes
+            </button>
+            <button id="bulk-upload-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                Bulk Upload
+            </button>
+            <button id="add-request-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg transition-colors">
+                + Add New Request
+            </button>
+        </div>
+    </header>
+
+    {% if messages %}
+    <div class="mb-6 space-y-3">
+        {% for message in messages %}
+        <div class="p-4 rounded-lg
+            {% if message.tags == 'success' %} bg-green-900/50 text-green-300 border border-green-700
+            {% elif message.tags == 'info' %} bg-sky-900/50 text-sky-300 border border-sky-700
+            {% elif message.tags == 'warning' %} bg-amber-900/50 text-amber-300 border border-amber-700
+            {% elif message.tags == 'error' %} bg-red-900/50 text-red-300 border border-red-700
+            {% else %} bg-slate-700 text-slate-300 border border-slate-600
+            {% endif %}"
+            role="alert">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h3 class="font-bold text-slate-300">Total Savings This Quarter</h3>
+            <p class="text-3xl font-bold text-green-400">₹{{ total_savings|floatformat:2 }}</p>
+        </div>
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h3 class="font-bold text-slate-300">Time Saved This Month</h3>
+            <p class="text-3xl font-bold text-sky-400">{{ total_time_saved|floatformat:2 }} <span class="text-xl">hours</span></p>
+        </div>
+        <div class="bg-slate-800 p-4 rounded-lg">
+            <h3 class="font-bold text-slate-300">Market Alert</h3>
+            <p class="text-amber-400">{{ market_alert }}</p>
+        </div>
+    </div>
+
+    <div id="kanban-board" class="kanban-board flex-grow">
+        {% for column in columns %}
+        <div class="kanban-column" data-column-id="{{ column.id }}">
+            <h2 class="kanban-column-title">
+                {{ column.title }}
+                <span class="ml-auto text-sm font-normal bg-slate-700 text-slate-300 rounded-full px-2 py-0.5" id="count-{{ column.id }}">
+                    {% if column.id == 'quotes-received' %}{{ column.products|length }}{% else %}{{ column.requests|length }}{% endif %}
+                </span>
+            </h2>
+            <div class="kanban-cards" id="cards-{{ column.id }}">
+                
+                {% if column.id == 'quotes-received' %}
+                    {% for product in column.products %}
+                    <div class="kanban-card {{ column.color }}" data-product-id="{{ product.id }}">
+                        <h3 class="font-bold">{{ product.name }}</h3>
+                        <p class="text-sm text-slate-400 mt-1">{{ product.quote_count }} quote(s) received</p>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    {% for request in column.requests %}
+                    <div class="kanban-card {{ column.color }}" data-request-id="{{ request.id }}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-grow">
+                                <h3 class="font-bold pr-4">{{ request.title }}</h3>
+                                <p class="text-sm text-slate-400 mt-1">{{ request.quantity }}</p>
+                            </div>
+                            <button class="delete-request-btn flex-shrink-0 text-slate-500 hover:text-red-500 transition-colors" title="Delete Request" data-request-id="{{ request.id }}">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div id="bulk-upload-modal" class="modal-backdrop hidden">
+    <div class="modal-content max-w-lg h-auto">
+        <form action="{% url 'procurement:api_bulk_upload' %}" method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <div class="p-6">
+                <h2 class="text-2xl font-bold mb-4">Bulk Upload Procurement Requests</h2>
+                <p class="text-slate-400 mb-4">Upload a CSV file. The file should contain columns (in order) for 'Product Title', 'Quantity', and 'Specifications'.</p>
+                <div class="bg-slate-700 p-4 rounded-lg">
+                    <input type="file" name="file" id="file-upload-input" accept=".csv" required class="block w-full text-sm text-slate-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-500 file:text-white hover:file:bg-indigo-600"/>
+                </div>
+                <div id="file-upload-status" class="text-green-400 text-sm mt-2"></div>
+                <div class="flex justify-end gap-4 mt-6">
+                    <button type="button" id="cancel-bulk-upload" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                    <button type="submit" id="process-bulk-upload" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Upload & Process</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div id="add-request-modal" class="modal-backdrop hidden">
+    <div class="modal-content max-w-2xl h-auto">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-6">Add New Procurement Request</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-900 p-6 rounded-lg">
+                    <h3 class="text-lg font-bold mb-4 text-slate-200">📋 Pre-RFQ Checklist</h3>
+                    <p class="text-sm text-slate-400 mb-4">Ensure the following before creating the request:</p>
+                    <ul class="space-y-3 text-sm">
+                        <li class="flex items-center"><input type="checkbox" class="h-4 w-4 bg-slate-700 border-slate-600 rounded text-indigo-500 focus:ring-indigo-500 mr-3"><span class="text-slate-300">Final quantity confirmed with stakeholders.</span></li>
+                        <li class="flex items-center"><input type="checkbox" class="h-4 w-4 bg-slate-700 border-slate-600 rounded text-indigo-500 focus:ring-indigo-500 mr-3"><span class="text-slate-300">Technical specifications are clear & complete.</span></li>
+                        <li class="flex items-center"><input type="checkbox" class="h-4 w-4 bg-slate-700 border-slate-600 rounded text-indigo-500 focus:ring-indigo-500 mr-3"><span class="text-slate-300">Required delivery date is feasible.</span></li>
+                        <li class="flex items-center"><input type="checkbox" class="h-4 w-4 bg-slate-700 border-slate-600 rounded text-indigo-500 focus:ring-indigo-500 mr-3"><span class="text-slate-300">Budget for this purchase is approved.</span></li>
+                        <li class="flex items-center"><input type="checkbox" class="h-4 w-4 bg-slate-700 border-slate-600 rounded text-indigo-500 focus:ring-indigo-500 mr-3"><span class="text-slate-300">Any special compliance/certifications noted.</span></li>
+                    </ul>
+                </div>
+                <div>
+                    <form id="add-request-form">
+                        <div class="mb-4">
+                            <label for="product-name" class="block text-slate-400 mb-1">Product Name</label>
+                            <input type="text" id="product-name" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="quantity" class="block text-slate-400 mb-1">Quantity</label>
+                            <input type="text" id="quantity" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        </div>
+                        <div class="mb-4">
+                            <label for="specs" class="block text-slate-400 mb-1">Specifications</label>
+                            <textarea id="specs" rows="4" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                        </div>
+                        <div class="flex justify-end gap-4 mt-6">
+                            <button type="button" id="cancel-add-request" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Create Request</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="drill-down-modal" class="modal-backdrop hidden">
+    <div id="modal-content-container" class="modal-content">
+        </div>
+</div>
+
+<div id="finalize-modal" class="modal-backdrop hidden">
+    <div class="modal-content max-w-lg h-auto">
+        <div class="p-6">
+            <h2 class="text-2xl font-bold mb-4">Confirm Final Quantity</h2>
+            <p class="text-slate-400 mb-4">Please confirm the final quantity to be ordered. This will be included in the confirmation email to the supplier.</p>
+            <div>
+                <label for="final-quantity-input" class="block text-slate-400 mb-1">Final Order Quantity</label>
+                <input type="text" id="final-quantity-input" class="w-full bg-slate-700 border border-slate-600 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="flex justify-end gap-4 mt-6">
+                <button type="button" id="cancel-finalize-btn" class="bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
+                <button type="button" id="confirm-finalize-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 px-4 rounded-lg">Confirm & Finalize</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %} 
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'procurement/js/procurement.js' %}"></script>
+{% endblock %}
