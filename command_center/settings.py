@@ -128,8 +128,9 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 
 
-# In settings.py
-SEARXNG_INSTANCE_URL = 'http://localhost:8080'
+# SearXNG instance URL (leave empty to disable fallback)
+# Example: https://searxng.example.com
+SEARXNG_INSTANCE_URL = os.getenv('SEARXNG_INSTANCE_URL', '').rstrip('/')
 
 # Logging Configuration
 LOGGING = {

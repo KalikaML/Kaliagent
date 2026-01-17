@@ -131,8 +131,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
         async openDrillDownModal(requestId) {
-            if (this.pollingInterval) clearInterval(this.pollingInterval);
+            // Always clear polling and reset state for a fresh modal experience
+            if (this.pollingInterval) {
+                clearInterval(this.pollingInterval);
+                this.pollingInterval = null;
+            }
 
+            // Clear log messages if opening a different request
             if (!this.currentRequestData || this.currentRequestData.id !== parseInt(requestId)) {
                 this.currentLogMessages = [];
             }
@@ -160,22 +165,24 @@ document.addEventListener('DOMContentLoaded', () => {
             this.drillDownModal.classList.remove('hidden');
             this.attachModalEventListeners(request);
 
-            if (request.status === 'new-request') this.runSupplierSearch(request);
+            // Trigger appropriate actions based on status
+            if (request.status === 'new-request') {
+                // Always run supplier search for new requests
+                await this.runSupplierSearch(request);
+            }
             if (request.status === 'rfqs-sent') this.runQuoteCheck(request);
             if (request.status === 'agent-working') {
-                // Start polling to reflect background scraping started elsewhere (e.g., bulk upload)
-                this.addLog('🤖 Agent is working in the background. This may take a few minutes...');
+                // Start polling exact command logs and status while agent runs
+                await this.fetchAndRenderLogs(request.id);
                 this.pollingInterval = setInterval(async () => {
+                    await this.fetchAndRenderLogs(request.id);
                     const statusResponse = await fetch(`/procurement/api/get-request-details/${request.id}/`);
                     const statusData = await statusResponse.json();
                     if (statusData.status !== 'agent-working') {
                         clearInterval(this.pollingInterval);
-                        this.addLog('✅ <b>Success!</b> Sourcing complete.');
                         this.openDrillDownModal(request.id);
-                    } else {
-                        this.addLog('... still scraping ...');
                     }
-                }, 7000);
+                }, 2000);
                 // Add a retry control in the modal header
                 const header = this.modalContentContainer.querySelector('.p-4.flex.justify-between.items-center');
                 if (header) {
@@ -183,12 +190,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     retryBtn.textContent = 'Retry Sourcing';
                     retryBtn.className = 'ml-2 bg-amber-600 hover:bg-amber-500 text-white font-semibold py-1 px-2 rounded text-sm';
                     retryBtn.addEventListener('click', async () => {
-                        this.addLog('🔄 Retrying sourcing agent...');
                         const resp = await fetch(`/procurement/api/find-suppliers/${request.id}/`, { method: 'POST', headers: { 'X-CSRFToken': this.csrfToken } });
                         if (resp.ok) {
-                            this.addLog('✅ Agent retry started.');
+                            await this.fetchAndRenderLogs(request.id);
                         } else {
-                            this.addLog('❌ Retry failed.');
+                            // ignore
                         }
                     });
                     header.appendChild(retryBtn);
@@ -221,10 +227,6 @@ document.addEventListener('DOMContentLoaded', () => {
         },
 
         async runSupplierSearch(request) {
-            this.addLog('▶️ <b>Agent 1:</b> Parsing request details...');
-            await new Promise(res => setTimeout(res, 500));
-            this.addLog('▶️ <b>Agent 2:</b> Starting hybrid web sourcing...');
-
             const response = await fetch(`/procurement/api/find-suppliers/${request.id}/`, {
                 method: 'POST',
                 headers: {
@@ -236,21 +238,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 this.addLog('❌ Error: Could not start the scraping agent.');
                 return;
             }
-
-            this.addLog('🤖 Agent is working in the background. This may take a few minutes...');
-
+            // Unified polling to reflect exact command logs and status
+            await this.fetchAndRenderLogs(request.id);
             this.pollingInterval = setInterval(async () => {
+                await this.fetchAndRenderLogs(request.id);
                 const statusResponse = await fetch(`/procurement/api/get-request-details/${request.id}/`);
                 const statusData = await statusResponse.json();
-
                 if (statusData.status !== 'agent-working') {
                     clearInterval(this.pollingInterval);
-                    this.addLog('✅ <b>Success!</b> Sourcing complete.');
                     this.openDrillDownModal(request.id);
-                } else {
-                    this.addLog('... still scraping ...');
                 }
-            }, 7000);
+            }, 2000);
+        },
+
+        async fetchAndRenderLogs(requestId) {
+            const logEl = document.getElementById('action-log');
+            if (!logEl) return;
+            try {
+                const resp = await fetch(`/procurement/api/get-request-logs/${requestId}/`);
+                if (!resp.ok) return;
+                const data = await resp.json();
+                const text = data.text || '';
+                logEl.textContent = text;
+                logEl.scrollTop = logEl.scrollHeight;
+            } catch (e) {
+                // Ignore transient fetch errors
+            }
         },
 
         closeDrillDownModal() {
@@ -524,7 +537,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <li class="flex items-center justify-between p-3 bg-slate-800 rounded-md">
                         <div>
                             <p class="font-semibold flex items-center">${s.name}${provenanceBadge}</p>
-                            <p class="text-xs text-slate-400">Email: ${s.email || 'Not Found'} ${sourceLink ? ' · ' + sourceLink : ''}</p>
+                            <p class="text-xs text-slate-400">Email: ${s.email || 'Not Found'} · Phone: ${s.phone || 'Not Found'} ${sourceLink ? ' · ' + sourceLink : ''}</p>
                         </div>
                         <input type="checkbox" checked class="form-checkbox h-5 w-5 bg-slate-600 border-slate-500 rounded text-indigo-600">
                     </li>`;

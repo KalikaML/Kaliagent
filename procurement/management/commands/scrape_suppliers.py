@@ -15,13 +15,136 @@ from procurement.models import ProcurementRequest, Supplier, Product, MasterVend
 from asgiref.sync import sync_to_async
 from procurement.utils import append_suppliers_to_sheet, load_previous_suppliers_for_product
 
+# --- Relevance Filtering Helpers ---
+STOPWORDS = {
+    'india', 'indian', 'private', 'limited', 'ltd', 'pvt', 'company', 'co', 'manufacturers', 'manufacturer',
+    'suppliers', 'supplier', 'exporters', 'exporter', 'dealer', 'dealers', 'contact', 'email', 'phone', 'product',
+    'products', 'services', 'service', 'industrial', 'engineering', 'home', 'about', 'catalog', 'catalogue', 'profile'
+}
+
+# Minimum relevance score required to accept a supplier
+MIN_RELEVANCE_SCORE = 0
+
+def extract_keywords(text: str) -> set:
+    if not text:
+        return set()
+    tokens = re.findall(r"[a-zA-Z0-9]+", text.lower())
+    return {t for t in tokens if len(t) >= 4}
+
+def get_email_domain(email: str | None) -> str | None:
+    if not email or '@' not in email:
+        return None
+    return email.split('@')[-1].lower()
+
+def html_to_text(content: str) -> str:
+    try:
+        soup = BeautifulSoup(content, 'html.parser')
+        # Remove script/style tags
+        for tag in soup(['script', 'style', 'noscript']):
+            tag.decompose()
+        return soup.get_text(separator=' ', strip=True)
+    except Exception:
+        return ''
+
+def compute_relevance(product_keywords: set, supplier_name: str | None, page_text: str, website_domain: str, email: str | None) -> int:
+    name_tokens = extract_keywords(supplier_name or '')
+    text_tokens = set(re.findall(r"[a-zA-Z0-9]+", page_text.lower()))
+    text_keywords = {t for t in text_tokens if len(t) >= 4}
+    overlap_in_name = len(product_keywords & name_tokens)
+    overlap_in_text = len(product_keywords & text_keywords)
+    score = overlap_in_name * 2 + overlap_in_text
+    email_domain = get_email_domain(email)
+    if email_domain and email_domain.endswith(website_domain):
+        score += 2  # prefer official domain email
+    return score
+
 # --- Helper Functions for Scraping ---
 
 def clean_phone_number(phone_text: str) -> str | None:
-    cleaned = re.sub(r'[^\d+]', '', phone_text)
-    if len(re.sub(r'^\+91', '', cleaned)) >= 10:
-        return cleaned
+    """Normalize and validate phone numbers.
+    - Preserves leading '+' for international format
+    - Strips spaces, dashes, parentheses
+    - Prefers Indian mobile numbers (10 digits starting 6-9)
+    - Returns None for unlikely numbers (too short)
+    """
+    if not phone_text:
+        return None
+    raw = re.sub(r'[\s\-()]', '', str(phone_text))
+    raw = raw.strip()
+    # Keep leading plus if present, drop other non-digits
+    if raw.startswith('+'):
+        digits = re.sub(r'[^\d]', '', raw)
+        cleaned = '+' + digits
+    else:
+        cleaned = re.sub(r'[^\d]', '', raw)
+
+    if not cleaned:
+        return None
+
+    # Normalize common Indian formats
+    digits_only = re.sub(r'^\+', '', cleaned)
+    # Drop leading 0 used for STD dialing
+    digits_only = re.sub(r'^0+', '', digits_only)
+    # If starts with 91 country code, trim for length checks
+    local = re.sub(r'^91', '', digits_only)
+
+    # Prefer mobile: 10 digits starting 6-9
+    if re.fullmatch(r'[6-9]\d{9}', local):
+        return '+91' + local
+
+    # Accept longer sequences (landlines) >=10
+    if len(local) <= 10:
+        # Return E.164-ish with +91 when plausible
+        if cleaned.startswith('+') or digits_only.startswith('91'):
+            return '+' + digits_only
+        # Assume India if unknown but 10+ digits
+        return '+91' + local
+
     return None
+
+def extract_phone_candidates(html: str) -> list[str]:
+    """Extract multiple candidate phone numbers from HTML via tel: links and regex.
+    Returns a list of normalized numbers (best-effort)."""
+    if not html:
+        return []
+    candidates: list[str] = []
+    try:
+        soup = BeautifulSoup(html, 'html.parser')
+        for a in soup.find_all('a', href=True):
+            href = a['href']
+            if href.lower().startswith('tel:'):
+                num = href.split(':', 1)[1]
+                norm = clean_phone_number(num)
+                if norm:
+                    candidates.append(norm)
+        # Also itemprop="telephone"
+        for el in soup.find_all(attrs={'itemprop': 'telephone'}):
+            norm = clean_phone_number(el.get_text(strip=True))
+            if norm:
+                candidates.append(norm)
+    except Exception:
+        pass
+
+    # Regex-based fallback: try to capture common patterns
+    patterns = [
+        r'(?:\+91\s?)?[6-9]\d{1,2}\s?\d{3}\s?\d{4}',  # Indian mobile with spaces
+        r'(?:\+91\s?)?[6-9]\d{9}',                       # Indian mobile contiguous
+        r'(?:\+\d{1,3}\s?)?\d{2,4}\s?\d{6,8}'         # Intl + landline-ish
+    ]
+    for pat in patterns:
+        for m in re.finditer(pat, html):
+            norm = clean_phone_number(m.group(0))
+            if norm:
+                candidates.append(norm)
+
+    # Deduplicate, preserve order
+    seen = set()
+    unique = []
+    for c in candidates:
+        if c not in seen:
+            seen.add(c)
+            unique.append(c)
+    return unique
 
 async def find_contact_info(page: Page) -> dict:
     details = {'email': None, 'phone': None}
@@ -33,8 +156,12 @@ async def find_contact_info(page: Page) -> dict:
         email_match = re.search(r'[\w\.\-]+@[\w\.\-]+\.\w+', content)
         if email_match: details['email'] = email_match.group(0).lower()
 
-        phone_match = re.search(r'(?:\+91|0)?[-\s]?(?:[6-9]\d{2,3}[-\s]?\d{3}[-\s]?\d{4})', content)
-        if phone_match: details['phone'] = clean_phone_number(phone_match.group(0))
+        # Prefer phone from tel: anchors and itemprop before regex
+        phone_candidates = extract_phone_candidates(content)
+        if phone_candidates:
+            # Prefer mobile (10-digit local) first
+            mobile_like = [p for p in phone_candidates if re.search(r'^\+?91?[6-9]\d{9}$', re.sub(r'^\+', '', p))]
+            details['phone'] = (mobile_like[0] if mobile_like else phone_candidates[0])
 
         if not all(details.values()):
             contact_link = page.locator('a[href*="contact"]').first
@@ -50,8 +177,10 @@ async def find_contact_info(page: Page) -> dict:
                             email_match = re.search(r'[\w\.\-]+@[\w\.\-]+\.\w+', contact_content)
                             if email_match: details['email'] = email_match.group(0).lower()
                         if not details['phone']:
-                            phone_match = re.search(r'(?:\+91|0)?[-\s]?(?:[6-9]\d{2,3}[-\s]?\d{3}[-\s]?\d{4})', contact_content)
-                            if phone_match: details['phone'] = clean_phone_number(phone_match.group(0))
+                            contact_candidates = extract_phone_candidates(contact_content)
+                            if contact_candidates:
+                                mobile_like = [p for p in contact_candidates if re.search(r'^\+?91?[6-9]\d{9}$', re.sub(r'^\+', '', p))]
+                                details['phone'] = (mobile_like[0] if mobile_like else contact_candidates[0])
                     except PlaywrightTimeoutError:
                         print(f"      - Timeout while navigating to contact page: {contact_url}")
                     except Exception as e_contact:
@@ -85,6 +214,46 @@ def search_with_searxng(query: str, num_results: int = 10, start_index: int = 0)
     except json.JSONDecodeError:
         print(f"   - ❌ Error decoding JSON response from SearXNG.")
         return []
+
+def search_with_serpapi(query: str, num_results: int = 10, start_index: int = 0) -> list:
+    """Search using SerpApi if configured, return list of {title, link}."""
+    if not settings.SERPAPI_API_KEY:
+        return []
+    try:
+        print(f"   - Trying SerpApi for page {start_index//num_results + 1}...")
+        search = GoogleSearch({
+            "q": query,
+            "api_key": settings.SERPAPI_API_KEY,
+            "num": num_results,
+            "start": start_index
+        })
+        results = search.get_dict().get('organic_results') or []
+        return [{
+            'title': r.get('title', 'N/A'),
+            'link': r.get('link', '')
+        } for r in results]
+    except Exception as e:
+        print(f"   - SerpApi failed ({e}).")
+        return []
+
+def unified_web_search(query: str, num_results: int = 10, start_index: int = 0) -> list:
+    """Try SerpApi first, then SearXNG, return de-duplicated list of results."""
+    seen = set()
+    combined = []
+    for provider in (search_with_serpapi, search_with_searxng):
+        try:
+            results = provider(query, num_results=num_results, start_index=start_index)
+        except TypeError:
+            # search_with_searxng signature doesn't accept num_results
+            results = provider(query, start_index=start_index)
+        for r in results:
+            url = r.get('link') or r.get('url') or ''
+            if url and url not in seen:
+                seen.add(url)
+                combined.append({'title': r.get('title', 'N/A'), 'url': url})
+        if combined:
+            break
+    return combined
 #store query 
 # ✨ NEW: Helper function to scrape product specifications from an IndiaMart product page
 async def scrape_product_specifications(page: Page) -> str | None:
@@ -147,7 +316,7 @@ def get_procurement_request(request_id: int):
 def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list):
     proc_request.suppliers.all().delete()
     saved_count = 0
-    seen_emails = set()
+    seen_contacts = set()
     product = proc_request.product
     
     newly_saved_suppliers_for_sheet = []
@@ -156,34 +325,55 @@ def save_suppliers_to_db(proc_request: ProcurementRequest, suppliers_data: list)
     print(f"\n[DEBUG] save_suppliers_to_db function received {len(suppliers_data)} suppliers.")
 
     for data in suppliers_data:
-        email = data.get('email')
-        if email and email not in seen_emails:
-            master_vendor, created = MasterVendor.objects.get_or_create(
+        name = data.get('name') or 'N/A'
+        email = (data.get('email') or None)
+        phone = (data.get('phone') or None)
+        source_link = data.get('source_link')
+        provenance = (data.get('provenance') or '').lower()
+
+        # Skip entries with no contact info at all
+        if not email and not phone:
+            print(f"[DEBUG] Skipping supplier '{name}' — no email or phone found.")
+            continue
+
+        # De-duplication key: prefer email, else phone, else source_link
+        key = None
+        if email:
+            key = f"email:{email.lower()}"
+        elif phone:
+            key = f"phone:{phone}"
+        elif source_link:
+            key = f"link:{source_link}"
+        if key and key in seen_contacts:
+            print(f"[DEBUG] Skipping duplicate supplier '{name}' via {key}.")
+            continue
+
+        master_vendor = None
+        if email:
+            master_vendor, _ = MasterVendor.objects.get_or_create(
                 email=email,
-                defaults={
-                    'name': data.get('name', 'N/A'),
-                    'phone': data.get('phone'),
-                    'source_link': data.get('source_link')
-                }
+                defaults={'name': name, 'phone': phone, 'source_link': source_link}
             )
             if product:
                 master_vendor.products.add(product)
 
-            # Persist provenance by prefixing source_link with 'csv:' for historical entries
-            src_link = master_vendor.source_link or data.get('source_link')
-            provenance = (data.get('provenance') or '').lower()
-            if src_link and provenance == 'existing' and not str(src_link).startswith('csv:'):
-                src_link = f"csv:{src_link}"
+        # Persist provenance by prefixing source_link with 'csv:' for historical entries
+        src_link = (master_vendor.source_link if master_vendor else None) or source_link
+        if src_link and provenance == 'existing' and not str(src_link).startswith('csv:'):
+            src_link = f"csv:{src_link}"
 
-            Supplier.objects.create(
-                procurement_request=proc_request,
-                master_vendor=master_vendor,
-                name=master_vendor.name, email=master_vendor.email,
-                phone=master_vendor.phone, source_link=src_link
-            )
-            seen_emails.add(email)
-            saved_count += 1
-            newly_saved_suppliers_for_sheet.append(data)
+        Supplier.objects.create(
+            procurement_request=proc_request,
+            master_vendor=master_vendor,
+            name=name,
+            email=email,
+            phone=phone,
+            source_link=src_link
+        )
+        if key:
+            seen_contacts.add(key)
+        saved_count += 1
+        newly_saved_suppliers_for_sheet.append({'name': name, 'email': email, 'phone': phone, 'source_link': source_link, 'provenance': provenance})
 
     # 👈 DEBUG: Check how many suppliers are ready to be written to Google Sheets
     print(f"[DEBUG] {len(newly_saved_suppliers_for_sheet)} suppliers are ready to be written to Google Sheets.")
@@ -231,6 +421,8 @@ async def run_supplier_sourcing_agent(request_id):
     scraped_domains = set()
     all_found_suppliers_data = []
     MARKETPLACE_DOMAINS = ["indiamart.com", "tradeindia.com", "alibaba.com", "amazon.com", "ebay.com", "exportersindia.com"]
+    UNDESIRED_DOMAINS = {"linkedin.com", "facebook.com", "instagram.com", "twitter.com", "youtube.com", "kalikaindia.com"}
+    product_keywords = extract_keywords(product_name)
 
     # Phase 0: Load historical suppliers from local CSV
     try:
@@ -323,9 +515,13 @@ async def run_supplier_sourcing_agent(request_id):
                         print(f"    - Visiting: {name} ({website_url})")
                         await page.goto(website_url, wait_until="domcontentloaded")
                         details = await find_contact_info(page)
-                        if any(details.values()):
+                        page_text = html_to_text(await page.content())
+                        relevance = compute_relevance(product_keywords, name, page_text, domain, details.get('email'))
+                        if any(details.values()) and relevance >= MIN_RELEVANCE_SCORE:
                             all_found_suppliers_data.append({'name': name, **details, 'source_link': website_url, 'provenance': 'scraped'})
-                            print(f"      ✅ Found: Email - {details['email']}, Phone - {details['phone']}")
+                            print(f"      ✅ Relevant: Email - {details['email']}, Phone - {details['phone']} (score={relevance})")
+                        else:
+                            print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
                     except PlaywrightTimeoutError:
                         print(f"      ❌ Timeout while processing vendor '{name}'. Skipping.")
                     except Exception as e:
@@ -339,33 +535,29 @@ async def run_supplier_sourcing_agent(request_id):
             try:
                 print(f"  -> Searching Google page {start_index//10 + 1}...")
                 search_query = f'"{product_name}" suppliers manufacturers India contact email'
-                results = []
-                try:
-                    print(f"   - Trying SerpApi for page {start_index//10 + 1}...")
-                    search = GoogleSearch({ "q": search_query, "api_key": settings.SERPAPI_API_KEY, "num": 10, "start": start_index })
-                    results = search.get_dict().get("organic_results", [])
-                    if not results: raise ValueError("No results from SerpApi.")
-                except Exception as e:
-                    print(f"   - SerpApi failed ({e}). Fallback to SearXNG.")
-                    results = search_with_searxng(search_query, start_index=start_index)
+                results = unified_web_search(search_query, num_results=10, start_index=start_index)
                 
                 if not results: break
 
                 for result in results:
                     try:
-                        website_url = result.get("link")
+                        website_url = result.get("url") or result.get("link")
                         if not website_url: continue
                         domain = urlparse(website_url).netloc.replace("www.", "")
-                        if domain in scraped_domains or any(m in domain for m in MARKETPLACE_DOMAINS): continue
+                        if domain in scraped_domains or any(m in domain for m in MARKETPLACE_DOMAINS) or any(u in domain for u in UNDESIRED_DOMAINS): continue
                         
                         scraped_domains.add(domain)
                         name = result.get("title")
                         print(f"    - Visiting: {name} ({website_url})")
                         await page.goto(website_url, wait_until="domcontentloaded")
                         details = await find_contact_info(page)
-                        if any(details.values()):
+                        page_text = html_to_text(await page.content())
+                        relevance = compute_relevance(product_keywords, name, page_text, domain, details.get('email'))
+                        if any(details.values()) and relevance >= MIN_RELEVANCE_SCORE:
                             all_found_suppliers_data.append({'name': name, **details, 'source_link': website_url, 'provenance': 'scraped'})
-                            print(f"      ✅ Found: Email - {details['email']}, Phone - {details['phone']}")
+                            print(f"      ✅ Relevant: Email - {details['email']}, Phone - {details['phone']} (score={relevance})")
+                        else:
+                            print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
                     except PlaywrightTimeoutError:
                         print(f"      ❌ Timeout while processing URL '{website_url}'. Skipping.")
                     except Exception as e:
@@ -373,6 +565,46 @@ async def run_supplier_sourcing_agent(request_id):
             except Exception as e_phase2:
                 print(f"❌ Error in Google sourcing phase: {e_phase2}")
                 break
+
+        # --- PHASE 2B: Target major Indian supplier portals directly if results are few ---
+        ALT_PORTALS = [
+            'site:tradeindia.com',
+            'site:alibaba.com',
+            'site:justdial.com',
+            'site:ofbusiness.com',
+        ]
+        if len(all_found_suppliers_data) < 5:
+            print("\n--- AGENT PHASE 2B: Targeted portal searches (TradeIndia, Alibaba, Justdial, OfBusiness)... ---")
+            for portal in ALT_PORTALS:
+                try:
+                    q = f'"{product_name}" suppliers manufacturers India contact email {portal}'
+                    results = unified_web_search(q, num_results=10, start_index=0)
+                    for r in results:
+                        website_url = r.get('url') or r.get('link') or ''
+                        if not website_url:
+                            continue
+                        domain = urlparse(website_url).netloc.replace('www.', '')
+                        if domain in scraped_domains or any(u in domain for u in UNDESIRED_DOMAINS):
+                            continue
+                        scraped_domains.add(domain)
+                        name = r.get('title')
+                        print(f"    - Visiting: {name} ({website_url})")
+                        try:
+                            await page.goto(website_url, wait_until="domcontentloaded")
+                            details = await find_contact_info(page)
+                            page_text = html_to_text(await page.content())
+                            relevance = compute_relevance(product_keywords, name, page_text, domain, details.get('email'))
+                            if any(details.values()) and relevance >= MIN_RELEVANCE_SCORE:
+                                all_found_suppliers_data.append({'name': name, **details, 'source_link': website_url, 'provenance': 'scraped'})
+                                print(f"      ✅ Relevant: Email - {details['email']}, Phone - {details['phone']} (score={relevance})")
+                            else:
+                                print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
+                        except PlaywrightTimeoutError:
+                            print(f"      ❌ Timeout while processing URL '{website_url}'. Skipping.")
+                        except Exception as e_visit:
+                            print(f"      ❌ Error processing URL '{website_url}': {e_visit}")
+                except Exception as e_portal:
+                    print(f"   - ❌ Portal-targeted search failed for {portal}: {e_portal}")
 
         await browser.close()
 

@@ -488,6 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div>
                             <p class="font-semibold">${s.name}</p>
                             <p class="text-xs text-slate-400">Email: ${s.email || 'Not Found'}</p>
+                            <p class="text-xs text-slate-400">Phone: ${s.phone || 'Not Found'}</p>
                         </div>
                         <input type="checkbox" checked class="form-checkbox h-5 w-5 bg-slate-600 border-slate-500 rounded text-indigo-600">
                     </li>
@@ -620,6 +621,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="space-y-3 bg-slate-800 p-4 rounded-lg">
                         <div class="grid grid-cols-2 gap-4">
                             <div><p class="text-sm text-slate-400">Supplier</p><p class="font-bold">${quote.supplier__name}</p></div>
+                            <div><p class="text-sm text-slate-400">Contact</p><p class="font-bold">${quote.supplier__email || 'N/A'}${(quote.supplier__phone ? ' · ' + quote.supplier__phone : '')}</p></div>
                             <div><p class="text-sm text-slate-400">Price</p><p class="font-bold text-green-400">₹${quote.price ? parseFloat(quote.price).toFixed(2) : 'N/A'}</p></div>
                             <div><p class="text-sm text-slate-400">Lead Time</p><p class="font-bold">${quote.lead_time_days || 'N/A'} days</p></div>
                             <div><p class="text-sm text-slate-400">Payment Terms</p><p class="font-bold">${quote.payment_terms || 'N/A'}</p></div>
@@ -644,7 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     priceClass = 'text-amber-400';
                 }
                 return `<tr class="border-b border-slate-700 hover:bg-slate-800">
-                    <td class="p-3 font-semibold">${q.supplier__name}</td>
+                    <td class="p-3"><div class="font-semibold">${q.supplier__name}</div><div class="text-xs text-slate-400">${q.supplier__email || ''}${(q.supplier__phone ? ' · ' + q.supplier__phone : '')}</div></td>
                     <td class="p-3 font-bold ${priceClass}">₹${q.price ? parseFloat(q.price).toFixed(2) : 'N/A'} ${bestQuoteBadge}</td>
                     <td class="p-3">${q.lead_time_days || 'N/A'} days</td>
                     <td class="p-3">${q.payment_terms || 'N/A'}</td>
@@ -701,6 +703,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div class="flex justify-between items-start mb-4">
                         <div>
                             <h3 class="text-xl font-bold">Details from: ${quote.supplier__name}</h3>
+                            <p class="text-xs text-slate-400 mt-1">${quote.supplier__email || ''}${(quote.supplier__phone ? ' · ' + quote.supplier__phone : '')}</p>
                         </div>
                         <button class="back-to-compare-btn bg-slate-600 hover:bg-slate-500 text-white font-bold py-2 px-4 rounded-lg text-sm">← Back</button>
                     </div>

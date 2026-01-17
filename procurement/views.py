@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import threading
 from collections import deque
@@ -98,6 +99,15 @@ def compute_quote_score(q, request, target_days: int = 5, per_day_penalty: int =
 SCRAPE_QUEUE = deque()
 SCRAPE_WORKER_RUNNING = False
 
+def _agent_log_path(request_id: int) -> str:
+    base_dir = getattr(settings, 'BASE_DIR', os.getcwd())
+    log_dir = os.path.join(base_dir, 'runtime_logs', 'procurement')
+    try:
+        os.makedirs(log_dir, exist_ok=True)
+    except Exception:
+        pass
+    return os.path.join(log_dir, f"agent_request_{request_id}.log")
+
 def _start_queue_worker():
     global SCRAPE_WORKER_RUNNING
     if SCRAPE_WORKER_RUNNING:
@@ -105,38 +115,69 @@ def _start_queue_worker():
     SCRAPE_WORKER_RUNNING = True
 
     def worker():
-        while SCRAPE_QUEUE:
-            request_id = SCRAPE_QUEUE.popleft()
-            try:
-                _run_single_scrape(request_id)
-            except Exception as e:
-                print(f"[QUEUE ERROR] Failed processing request {request_id}: {e}")
-        SCRAPE_WORKER_RUNNING = False
+        global SCRAPE_WORKER_RUNNING
+        try:
+            while True:
+                try:
+                    request_id = SCRAPE_QUEUE.popleft()
+                except IndexError:
+                    # Queue is empty, exit the worker
+                    break
+                try:
+                    _run_single_scrape(request_id)
+                except Exception as e:
+                    print(f"[QUEUE ERROR] Failed processing request {request_id}: {e}")
+        finally:
+            SCRAPE_WORKER_RUNNING = False
 
     threading.Thread(target=worker, daemon=True).start()
 
 def _run_single_scrape(request_id):
-    """Starts the scrape_suppliers management command for a given request ID in a background thread."""
+    """Starts the scrape_suppliers management command for a given request ID in a background thread.
+    Streams exact command output to a per-request log file so UI can reflect true logs.
+    """
     try:
         req = ProcurementRequest.objects.get(pk=request_id)
         req.status = 'agent-working'
         req.save()
-        
+
+        log_path = _agent_log_path(request_id)
+        try:
+            # Truncate any previous log for a clean run
+            with open(log_path, 'w', encoding='utf-8') as f:
+                f.write('')
+        except Exception:
+            pass
+
         command = [sys.executable, 'manage.py', 'scrape_suppliers', str(request_id)]
         try:
             print(f"[AGENT] Starting supplier scrape for request {request_id}...")
-            completed = subprocess.run(command, capture_output=True, text=True)
-            if completed.stdout:
-                print(f"[AGENT STDOUT] {completed.stdout}")
-            if completed.stderr:
-                print(f"[AGENT STDERR] {completed.stderr}")
-            if completed.returncode == 0:
+            # Stream stdout+stderr into the log file as the command runs
+            with open(log_path, 'a', encoding='utf-8') as log_file:
+                process = subprocess.Popen(
+                    command,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1
+                )
+                for line in process.stdout:
+                    try:
+                        log_file.write(line)
+                        # Flush so UI sees live logs while the agent runs
+                        log_file.flush()
+                    except Exception:
+                        # best-effort logging; ignore write failures
+                        pass
+                process.wait()
+
+            if process.returncode == 0:
                 print(f"[AGENT] Supplier scrape completed for request {request_id}.")
             else:
-                print(f"[AGENT] Supplier scrape exited with code {completed.returncode} for request {request_id}.")
+                print(f"[AGENT] Supplier scrape exited with code {process.returncode} for request {request_id}.")
                 # Mark failure to avoid UI stuck; move to awaiting-approval
                 req.status = 'awaiting-approval'
-                req.specs = (req.specs or '') + f"\n[Scrape failed: code {completed.returncode}]"
+                req.specs = (req.specs or '') + f"\n[Scrape failed: code {process.returncode}]"
                 req.save(update_fields=['status','specs'])
         except Exception as e:
             print(f"[AGENT ERROR] Failed to run supplier scrape for request {request_id}: {e}")
@@ -234,6 +275,8 @@ def get_product_quotes_api(request, product_id):
             item = {
                 'id': q.id,
                 'supplier__name': q.supplier.name if q.supplier else None,
+                'supplier__email': q.supplier.email if q.supplier else None,
+                'supplier__phone': q.supplier.phone if q.supplier else None,
                 'price': float(q.price) if q.price is not None else None,
                 'lead_time_days': q.lead_time_days,
                 'payment_terms': q.payment_terms,
@@ -448,7 +491,7 @@ def upload_quote_api(request, pk):
     except Exception:
         # Fallback: if product aggregation fails, return request-level details
         quotes = list(req.quotes.all().values(
-            'id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 
+            'id', 'supplier__name', 'supplier__email', 'supplier__phone', 'price', 'lead_time_days', 'payment_terms', 'discount', 
             'full_email_body', 'quantity', 'subtotal', 'tax_amount', 'freight_charges', 'total_amount'
         ))
         data = {
@@ -681,7 +724,7 @@ def get_request_details_api(request, pk):
                 'provenance': provenance,
             })
         quotes = list(req.quotes.all().values(
-            'id', 'supplier__name', 'price', 'lead_time_days', 'payment_terms', 'discount', 
+            'id', 'supplier__name', 'supplier__email', 'supplier__phone', 'price', 'lead_time_days', 'payment_terms', 'discount', 
             'full_email_body', 'quantity', 'subtotal', 'tax_amount', 'freight_charges', 'total_amount'
         ))
         data = {
@@ -698,6 +741,25 @@ def get_request_details_api(request, pk):
         return JsonResponse(data)
     except ProcurementRequest.DoesNotExist:
         return JsonResponse({'error': 'Request not found'}, status=404)
+
+def get_request_logs_api(request, pk):
+    """Return raw agent logs for a given request ID as text.
+    Logs reflect exact output of the scrape_suppliers management command.
+    """
+    try:
+        ProcurementRequest.objects.get(pk=pk)
+    except ProcurementRequest.DoesNotExist:
+        return JsonResponse({'error': 'Request not found'}, status=404)
+
+    log_path = _agent_log_path(pk)
+    if not os.path.exists(log_path):
+        return JsonResponse({'text': ''})
+    try:
+        with open(log_path, 'r', encoding='utf-8', errors='replace') as f:
+            content = f.read()
+        return JsonResponse({'text': content})
+    except Exception as e:
+        return JsonResponse({'error': f'Could not read logs: {e}'}, status=500)
 
 @csrf_exempt
 @require_POST

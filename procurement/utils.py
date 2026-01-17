@@ -68,6 +68,167 @@ def _compile_patterns_from_keywords(keywords):
 
 KEYWORD_PATTERNS = _compile_patterns_from_keywords(QUOTE_KEYWORDS)
 
+# Additional price/quote signal patterns found commonly in attachments
+PRICE_SIGNAL_PATTERNS = [
+    re.compile(r"\bINR\b", re.IGNORECASE),
+    re.compile(r"\bRs\.?\b", re.IGNORECASE),
+    re.compile(r"₹"),
+    re.compile(r"\b(total|grand\s+total|subtotal|gst|tax|unit\s+price|qty|quantity|rate|amount|value)\b", re.IGNORECASE),
+    # currency-like numbers (accept integers, with optional commas/decimals and '/-' suffix)
+    re.compile(r"₹?\s*\b\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?\b"),
+    re.compile(r"\b\d{3,}(?:,\d{3})*(?:\.\d{1,2})?\s*\/-\b")
+]
+
+# --- Product tokenization & matching helpers ---
+STOPWORDS = set([
+    'for','the','and','of','a','an','to','with','by','on','at','in','per',
+    # Generic product descriptors that cause false matches
+    'model','range','size','logo','name','approved','listed','dial','white','color',
+    # Common units/containers (often appear across products)
+    'mtr','roll','box'
+])
+
+def _normalize_product_tokens(name: str) -> list[str]:
+    if not name:
+        return []
+    s = name.lower()
+    # Replace common separators with spaces
+    for ch in ['-', '/', '=', ',', ':', ';']:
+        s = s.replace(ch, ' ')
+    # Collapse multiple spaces
+    s = re.sub(r"\s+", " ", s).strip()
+    # Keep alphanumeric tokens like '32mm', '600m', 'cord', 'strap'
+    raw_tokens = re.findall(r"[a-z0-9]+", s)
+    tokens = []
+    for t in raw_tokens:
+        if not t:
+            continue
+        # Skip stopwords
+        if t in STOPWORDS:
+            continue
+        # Skip purely numeric tokens
+        if t.isdigit():
+            continue
+        # Skip very short alpha tokens (e.g., 'm')
+        if t.isalpha() and len(t) < 3:
+            continue
+        tokens.append(t)
+    return tokens
+
+def _token_overlap_count(text: str, tokens: list[str]) -> int:
+    if not text or not tokens:
+        return 0
+    low = text.lower()
+    count = 0
+    for t in set(tokens):
+        # word boundary when token is purely alphabetic; substring for mixed like '32mm'
+        if t.isalpha():
+            if re.search(rf"\b{re.escape(t)}\b", low):
+                count += 1
+        else:
+            if t in low:
+                count += 1
+    return count
+
+def _alpha_overlap_count(text: str, tokens: list[str]) -> int:
+    """Count overlaps considering only alphabetic tokens (e.g., 'drill','strap')."""
+    if not text or not tokens:
+        return 0
+    low = text.lower()
+    count = 0
+    for t in set(tokens):
+        if t.isalpha() and re.search(rf"\b{re.escape(t)}\b", low):
+            count += 1
+    return count
+
+def _find_best_matching_request_by_tokens(text: str, email_date=None):
+    """Return the active `ProcurementRequest` whose title/product tokens overlap the text.
+    Requires overlap >= 2 to avoid false positives. Chooses the most recent RFQ among ties.
+    """
+    try:
+        candidates = ProcurementRequest.objects.filter(
+            status__in=['rfqs-sent', 'quotes-received'],
+            rfq_sent_time__isnull=False
+        ).select_related('product')
+    except Exception:
+        return None
+
+    best = None
+    best_score = 0
+    for req in candidates:
+        name_parts = []
+        if req.title:
+            name_parts.append(req.title)
+        if req.product and req.product.name:
+            name_parts.append(req.product.name)
+        tokens = _normalize_product_tokens(' '.join(name_parts))
+        score = _token_overlap_count(text, tokens)
+        alpha_score = _alpha_overlap_count(text, tokens)
+        # Require at least 2 overlaps, with at least 1 being alphabetic (noun-like)
+        if score >= 2 and alpha_score >= 1:
+            if score > best_score:
+                best = req
+                best_score = score
+            elif score == best_score and best is not None:
+                # Prefer more recent RFQ time
+                prev = best.rfq_sent_time or datetime.min
+                cur = req.rfq_sent_time or datetime.min
+                if cur > prev:
+                    best = req
+                    best_score = score
+    # Respect RFQ timing (reply should be after RFQ)
+    if best and email_date and best.rfq_sent_time and email_date <= best.rfq_sent_time:
+        return None
+    return best
+
+def _find_request_by_product_name_tokens(product_name: str, email_date=None):
+    """Match an RFQ using tokens derived from the parsed 'product_name' string itself.
+    Requires >=2 overlapping tokens and at least 1 alphabetic overlap to avoid numeric-only matches.
+    Chooses most recent RFQ among ties and respects RFQ timing.
+    """
+    if not product_name:
+        return None
+    try:
+        candidates = ProcurementRequest.objects.filter(
+            status__in=['rfqs-sent', 'quotes-received'],
+            rfq_sent_time__isnull=False
+        ).select_related('product')
+    except Exception:
+        return None
+
+    name_tokens = set(_normalize_product_tokens(product_name))
+    if not name_tokens:
+        return None
+
+    best = None
+    best_score = 0
+    for req in candidates:
+        parts = []
+        if req.title:
+            parts.append(req.title)
+        if req.product and req.product.name:
+            parts.append(req.product.name)
+        req_tokens = set(_normalize_product_tokens(' '.join(parts)))
+        overlap = name_tokens & req_tokens
+        if len(overlap) >= 2:
+            # Ensure at least one alphabetic token in overlap
+            alpha_overlap = any(t.isalpha() for t in overlap)
+            if not alpha_overlap:
+                continue
+            score = len(overlap)
+            if score > best_score:
+                best = req
+                best_score = score
+            elif score == best_score and best is not None:
+                prev = best.rfq_sent_time or datetime.min
+                cur = req.rfq_sent_time or datetime.min
+                if cur > prev:
+                    best = req
+                    best_score = score
+    if best and email_date and best.rfq_sent_time and email_date <= best.rfq_sent_time:
+        return None
+    return best
+
 def _build_product_identifier_patterns():
     # Consider only active requests to focus search
     reqs = ProcurementRequest.objects.filter(
@@ -103,9 +264,7 @@ def extract_text_from_uploaded_file(django_file):
         content = django_file.read()
         text = ''
         if name.endswith('.pdf'):
-            with fitz.open(stream=io.BytesIO(content), filetype="pdf") as doc:
-                for page in doc:
-                    text += page.get_text() + "\n"
+            text += _extract_text_from_pdf_bytes(content)
         elif name.endswith(('.png', '.jpg', '.jpeg', '.tiff')):
             image = Image.open(io.BytesIO(content))
             text += pytesseract.image_to_string(image) + "\n"
@@ -132,6 +291,52 @@ def extract_text_from_uploaded_file(django_file):
     except Exception as e:
         print(f"Failed to parse uploaded file {getattr(django_file, 'name', 'N/A')}: {e}")
         return ''
+
+def _extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
+    """Robust PDF text extraction with OCR fallback for scanned PDFs.
+    - Tries normal text extraction via PyMuPDF
+    - If page text is empty/very short, renders page to image and uses Tesseract OCR
+    - Gracefully skips encrypted PDFs if not decryptable
+    """
+    out_text = ''
+    try:
+        with fitz.open(stream=io.BytesIO(pdf_bytes), filetype="pdf") as doc:
+            # Attempt to handle simple encryption (empty password)
+            if doc.is_encrypted:
+                try:
+                    doc.authenticate("")
+                except Exception:
+                    pass
+            if doc.is_encrypted:
+                return "[Skipped encrypted PDF]\n"
+
+            for page in doc:
+                try:
+                    page_text = page.get_text() or ''
+                except Exception:
+                    page_text = ''
+
+                # Heuristic: treat very short text as scanned/empty; run OCR fallback
+                if len(page_text.strip()) < 20:
+                    try:
+                        # Render at higher DPI for better OCR (approx 300 DPI)
+                        zoom = 3.0
+                        mat = fitz.Matrix(zoom, zoom)
+                        pix = page.get_pixmap(matrix=mat)
+                        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                        ocr_text = pytesseract.image_to_string(img)
+                        if ocr_text:
+                            out_text += ocr_text + "\n"
+                            continue
+                    except Exception:
+                        # If OCR fails, fall back to whatever text we have
+                        pass
+
+                out_text += page_text + "\n"
+    except Exception as e:
+        print(f"Failed to open/parse PDF bytes: {e}")
+        out_text += "[Failed to parse PDF]\n"
+    return out_text
 
 def parse_quote_text_to_items(extracted_text):
     """Uses AI to parse quotation text to invoice details and line items."""
@@ -197,34 +402,139 @@ def _load_previous_suppliers_csv():
     print(f"[CSV Loader] Loaded {len(rows)} rows from historical suppliers CSV: {path}")
     return rows
 
-def load_previous_suppliers_for_product(product_name: str) -> list[dict]:
-    """Return list of supplier dicts for given product from local CSV.
-    Expected columns (case-insensitive, flexible): product, product name/title/description, supplier name, email, phone, source link/url/website.
+def _normalize_sheet_row_to_supplier(row: dict, product_name_key: str = 'Product Name') -> dict | None:
+    """Normalize a Google Sheet row (dict) into the supplier structure used by the agent.
+    Expects headers like: Product Name, Supplier Name, Email, Phone, Source Link.
+    Returns None if row lacks both email and phone.
+    """
+    try:
+        name = row.get('Supplier Name') or row.get('supplier name') or row.get('Name') or row.get('name')
+        email = row.get('Email') or row.get('email')
+        phone = row.get('Phone') or row.get('phone') or row.get('Mobile') or row.get('mobile')
+        src = row.get('Source Link') or row.get('source link') or row.get('URL') or row.get('url') or row.get('Website') or row.get('website')
+        item = {'name': name or 'N/A', 'email': email, 'phone': phone, 'source_link': src}
+        if item['email'] or item['phone']:
+            return item
+    except Exception:
+        pass
+    return None
+
+def load_previous_suppliers_from_sheet(product_name: str) -> list[dict]:
+    """Load historical suppliers for a product from the master Google Sheet.
+    Uses settings.GOOGLE_SHEETS_CREDENTIALS_FILE and settings.GOOGLE_SHEET_ID.
+    Filters rows where Product Name matches or contains the provided name (case-insensitive).
     """
     if not product_name:
         return []
-    rows = _load_previous_suppliers_csv()
-    if not rows:
+    try:
+        creds_path = getattr(settings, 'GOOGLE_SHEETS_CREDENTIALS_FILE', None)
+        sheet_id = getattr(settings, 'GOOGLE_SHEET_ID', None)
+        if not creds_path or not sheet_id:
+            return []
+        scopes = [
+            'https://www.googleapis.com/auth/spreadsheets',
+            'https://www.googleapis.com/auth/drive'
+        ]
+        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        client = gspread.authorize(creds)
+        spreadsheet = client.open_by_key(sheet_id)
+        MASTER_SHEET_NAME = "All Suppliers Data"
+        try:
+            ws = spreadsheet.worksheet(MASTER_SHEET_NAME)
+        except gspread.WorksheetNotFound:
+            # If the sheet doesn't exist yet, there is no historical data
+            return []
+
+        # Use explicit headers to avoid gspread duplicate/blank header errors
+        EXPECTED_HEADERS = ['Product Name', 'Supplier Name', 'Email', 'Phone', 'Source Link', 'Scraped At']
+        try:
+            rows = ws.get_all_records(expected_headers=EXPECTED_HEADERS)
+        except Exception as _e:
+            # Fallback: read raw values and build minimal dicts for known columns
+            values = ws.get_all_values()
+            rows = []
+            if values:
+                header_row = values[0]
+                header_map = {}
+                for i, h in enumerate(header_row):
+                    if h and str(h).strip():
+                        header_map[str(h).strip().lower()] = i
+
+                def _idx(*names):
+                    for n in names:
+                        j = header_map.get(str(n).strip().lower())
+                        if j is not None:
+                            return j
+                    return None
+
+                idx_product = _idx('Product Name', 'product name', 'Product', 'product')
+                idx_supplier = _idx('Supplier Name', 'supplier name', 'Name', 'name')
+                idx_email = _idx('Email', 'email')
+                idx_phone = _idx('Phone', 'phone', 'Mobile', 'mobile')
+                idx_source = _idx('Source Link', 'source link', 'URL', 'url', 'Website', 'website')
+
+                for row in values[1:]:
+                    rec = {
+                        'Product Name': row[idx_product] if idx_product is not None and idx_product < len(row) else None,
+                        'Supplier Name': row[idx_supplier] if idx_supplier is not None and idx_supplier < len(row) else None,
+                        'Email': row[idx_email] if idx_email is not None and idx_email < len(row) else None,
+                        'Phone': row[idx_phone] if idx_phone is not None and idx_phone < len(row) else None,
+                        'Source Link': row[idx_source] if idx_source is not None and idx_source < len(row) else None,
+                        'Scraped At': None,
+                    }
+                    rows.append(rec)
+        target = product_name.strip().lower()
+        results: list[dict] = []
+        for r in rows:
+            prod = r.get('Product Name') or r.get('product name') or r.get('Product') or r.get('product')
+            if not prod:
+                continue
+            pnorm = str(prod).strip().lower()
+            if pnorm == target or target in pnorm:
+                item = _normalize_sheet_row_to_supplier(r)
+                if item:
+                    results.append(item)
+        if results:
+            print(f"[GSHEETS Loader] Loaded {len(results)} historical suppliers for '{product_name}' from master sheet.")
+        return results
+    except Exception as e:
+        print(f"[GSHEETS Loader] Failed to read suppliers from Google Sheet: {e}")
         return []
-    target = product_name.strip().lower()
-    results = []
-    for r in rows:
-        prod = (
-            r.get('product') or r.get('product name') or r.get('product title') or r.get('item') or r.get('item description') or r.get('product description')
-        )
-        if not prod:
-            continue
-        pnorm = str(prod).strip().lower()
-        if pnorm == target or target in pnorm:
-            name = r.get('supplier') or r.get('supplier name') or r.get('name')
-            email = r.get('email')
-            phone = r.get('phone') or r.get('mobile') or r.get('contact')
-            src = r.get('source') or r.get('source link') or r.get('url') or r.get('website')
-            item = {'name': name or 'N/A', 'email': email, 'phone': phone, 'source_link': src}
-            # Only include entries with at least an email or phone
-            if item['email'] or item['phone']:
-                results.append(item)
-    return results
+
+def load_previous_suppliers_for_product(product_name: str) -> list[dict]:
+    """Unified loader for Phase 0 historical suppliers.
+    Priority: Google Sheet (master) → local CSV fallback.
+    """
+    # 1) Try Google Sheet
+    sheet_results = load_previous_suppliers_from_sheet(product_name)
+    if sheet_results:
+        return sheet_results
+    # 2) Fallback to local CSV
+    #if not product_name:
+    #    return []
+    #rows = _load_previous_suppliers_csv()
+    #if not rows:
+    #    return []
+    #target = product_name.strip().lower()
+    #results = []
+    #for r in rows:
+    #    prod = (
+    #        r.get('product') or r.get('product name') or r.get('product title') or r.get('item') or r.get('item description') or r.get('product description')
+    #    )
+    #    if not prod:
+    #        continue
+    #    pnorm = str(prod).strip().lower()
+    #    if pnorm == target or target in pnorm:
+    #        name = r.get('supplier') or r.get('supplier name') or r.get('name')
+    #        email = r.get('email')
+    #        phone = r.get('phone') or r.get('mobile') or r.get('contact')
+    #        src = r.get('source') or r.get('source link') or r.get('url') or r.get('website')
+    #        item = {'name': name or 'N/A', 'email': email, 'phone': phone, 'source_link': src}
+    #        if item['email'] or item['phone']:
+    #            results.append(item)
+    #if results:
+    #    print(f"[CSV Loader] Loaded {len(results)} historical suppliers for '{product_name}' from local CSV.")
+    #return results
 
 # ✨ NEW: Reusable function to send RFQs for a given request ID
 def send_rfqs_for_request(request_id, attachment=None):
@@ -442,64 +752,87 @@ def process_incoming_quotes():
                 if part.get_content_maintype() == 'multipart' or part.get('Content-Disposition') is None:
                     continue
                 filename = part.get_filename()
-                if filename:
-                    try:
-                        attachment_bytes = part.get_payload(decode=True)
-                        extracted_text += f"\n--- ATTACHMENT: {filename} ---\n"
-                        if filename.lower().endswith('.pdf'):
-                            try:
-                                with fitz.open(stream=io.BytesIO(attachment_bytes), filetype="pdf") as doc:
-                                    # Try to handle encrypted PDFs gracefully
-                                    if doc.is_encrypted:
-                                        try:
-                                            doc.authenticate("")  # attempt empty password
-                                        except Exception:
-                                            pass
-                                    if doc.is_encrypted:
-                                        extracted_text += f"[Skipped encrypted PDF: {filename}]\n"
-                                    else:
-                                        for page in doc:
-                                            extracted_text += page.get_text() + "\n"
-                            except Exception as e:
-                                print(f"Failed to open PDF {filename}: {e}")
-                                extracted_text += f"[Failed to parse PDF: {filename}]\n"
-                        elif filename.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff')):
-                            image = Image.open(io.BytesIO(attachment_bytes))
-                            extracted_text += pytesseract.image_to_string(image) + "\n"
-                        elif filename.lower().endswith('.xlsx') and EXCEL_LIBS_INSTALLED:
-                            workbook = openpyxl.load_workbook(io.BytesIO(attachment_bytes))
-                            for sheet in workbook.worksheets:
-                                for row in sheet.iter_rows():
-                                    row_text = [str(cell.value) for cell in row if cell.value is not None]
-                                    if row_text: extracted_text += ", ".join(row_text) + "\n"
-                        elif filename.lower().endswith('.xls') and EXCEL_LIBS_INSTALLED:
-                            workbook = xlrd.open_workbook(file_contents=attachment_bytes)
-                            for sheet in workbook.sheets():
-                                for row_idx in range(sheet.nrows):
-                                    row_text = [str(cell.value) for cell in sheet.row(row_idx) if cell.value is not None]
-                                    if row_text: extracted_text += ", ".join(row_text) + "\n"
-                        elif filename.lower().endswith('.csv'):
-                            decoded_content = attachment_bytes.decode('utf-8', errors='ignore')
-                            reader = csv.reader(io.StringIO(decoded_content))
-                            for row in reader:
-                                extracted_text += ", ".join(row) + "\n"
-                        elif filename.lower().endswith('.txt'):
-                            extracted_text += attachment_bytes.decode('utf-8', errors='ignore') + "\n"
-                        extracted_text += f"--- END ATTACHMENT: {filename} ---\n\n"
-                    except Exception as e:
-                        print(f"Failed to parse attachment {filename}: {e}")
+                content_type = (part.get_content_type() or '').lower()
+                try:
+                    attachment_bytes = part.get_payload(decode=True)
+                except Exception:
+                    attachment_bytes = None
+
+                if not attachment_bytes:
+                    continue
+
+                # Derive a safe display name when filename is missing
+                display_name = filename or {
+                    'application/pdf': 'attachment.pdf',
+                    'image/png': 'attachment.png',
+                    'image/jpeg': 'attachment.jpg',
+                    'image/tiff': 'attachment.tiff',
+                    'text/plain': 'attachment.txt',
+                    'text/csv': 'attachment.csv',
+                    'application/vnd.ms-excel': 'attachment.xls',
+                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': 'attachment.xlsx',
+                }.get(content_type, 'attachment.bin')
+
+                try:
+                    extracted_text += f"\n--- ATTACHMENT: {display_name} ---\n"
+                    # Primary type detection: prefer content-type, fallback to filename
+                    is_pdf = (content_type == 'application/pdf') or (display_name.lower().endswith('.pdf'))
+                    is_image = content_type.startswith('image/') or display_name.lower().endswith(('.png', '.jpg', '.jpeg', '.tiff'))
+                    is_xlsx = (content_type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet') or display_name.lower().endswith('.xlsx')
+                    is_xls = (content_type in ('application/vnd.ms-excel', 'application/xls')) or display_name.lower().endswith('.xls')
+                    is_csv = (content_type == 'text/csv') or display_name.lower().endswith('.csv')
+                    is_txt = (content_type == 'text/plain') or display_name.lower().endswith('.txt')
+
+                    if is_pdf:
+                        extracted_text += _extract_text_from_pdf_bytes(attachment_bytes)
+                    elif is_image:
+                        image = Image.open(io.BytesIO(attachment_bytes))
+                        extracted_text += pytesseract.image_to_string(image) + "\n"
+                    elif is_xlsx and EXCEL_LIBS_INSTALLED:
+                        workbook = openpyxl.load_workbook(io.BytesIO(attachment_bytes))
+                        for sheet in workbook.worksheets:
+                            for row in sheet.iter_rows():
+                                row_text = [str(cell.value) for cell in row if cell.value is not None]
+                                if row_text:
+                                    extracted_text += ", ".join(row_text) + "\n"
+                    elif is_xls and EXCEL_LIBS_INSTALLED:
+                        workbook = xlrd.open_workbook(file_contents=attachment_bytes)
+                        for sheet in workbook.sheets():
+                            for row_idx in range(sheet.nrows):
+                                row_text = [str(cell.value) for cell in sheet.row(row_idx) if cell.value is not None]
+                                if row_text:
+                                    extracted_text += ", ".join(row_text) + "\n"
+                    elif is_csv:
+                        decoded_content = attachment_bytes.decode('utf-8', errors='ignore')
+                        reader = csv.reader(io.StringIO(decoded_content))
+                        for row in reader:
+                            extracted_text += ", ".join(row) + "\n"
+                    elif is_txt:
+                        extracted_text += attachment_bytes.decode('utf-8', errors='ignore') + "\n"
+                    extracted_text += f"--- END ATTACHMENT: {display_name} ---\n\n"
+                except Exception as e:
+                    print(f"Failed to parse attachment {display_name}: {e}")
 
             if not extracted_text.strip():
                 print(f"⚠️ No text extracted from email ID {e_id} - skipping")
                 continue
 
-            # Heuristic pre-filter: must match quote keywords and product identifiers in subject or body
+            # Heuristic pre-filter: allow either quote keywords OR strong price signals (especially in attachments)
             combined_text = (subject_text + "\n" + extracted_text)
             has_keyword = _text_matches_any(combined_text, KEYWORD_PATTERNS)
-            has_product = _text_matches_any(combined_text, product_patterns) if product_patterns else True
-            if not (has_keyword and has_product):
-                # Not a candidate quote for active products; skip without marking as seen
+            has_price_signal = any(p.search(extracted_text) for p in PRICE_SIGNAL_PATTERNS)
+            if not (has_keyword or has_price_signal):
+                # Not a candidate quote; skip without marking as seen
                 continue
+
+            # Try to capture explicit Request ID from subject like "[REQ-123]"
+            req_id_int = None
+            try:
+                req_id_match = re.search(r"\bREQ-(\d+)\b", subject_text)
+                if req_id_match:
+                    req_id_int = int(req_id_match.group(1))
+            except Exception:
+                req_id_int = None
 
             parsing_prompt = (
                 f"You are an expert procurement assistant. From the following quotation text, "
@@ -540,12 +873,6 @@ def process_incoming_quotes():
                 if not product_name or price is None:
                     print(f"Skipping an item from email UID {uid} due to missing name or price.")
                     continue
-                # Filter requests by product and rfq_sent_time
-                proc_requests = ProcurementRequest.objects.filter(
-                    product__name__iexact=product_name,
-                    status__in=['rfqs-sent', 'quotes-received'],
-                    rfq_sent_time__isnull=False
-                )
                 # Get email date
                 email_date_str = msg.get('Date')
                 email_date = None
@@ -554,13 +881,6 @@ def process_incoming_quotes():
                         email_date = email.utils.parsedate_to_datetime(email_date_str)
                     except Exception:
                         pass
-                # Find matching request where email received after rfq_sent_time
-                proc_request = None
-                for req in proc_requests:
-                    if email_date and req.rfq_sent_time and email_date > req.rfq_sent_time:
-                        proc_request = req
-                        break
-                # Strictly skip emails before RFQ sent time (Python-side enforcement)
                 # Also skip emails older than 7 days from today
                 from datetime import datetime, timedelta
                 now = datetime.now(email_date.tzinfo) if email_date and email_date.tzinfo else datetime.now()
@@ -568,19 +888,72 @@ def process_incoming_quotes():
                     print(f"Skipping email UID {uid} for product '{product_name}' because it is older than 7 days.")
                     mail.store(e_id, '+FLAGS', '\\Seen')
                     continue
-                if not proc_request:
-                    print(f"Skipping email UID {uid} for product '{product_name}' because it was received before RFQ was sent or no valid RFQ found.")
-                    mail.store(e_id, '+FLAGS', '\\Seen')
-                    continue
-                if not proc_request:
-                    product, _ = Product.objects.get_or_create(name=product_name)
-                    proc_request = ProcurementRequest.objects.create(
-                        title=product_name, product=product, status='quotes-received',
-                        quantity=quantity or 'N/A (from email)',
-                        specs=f'Automatically created from a quote received from {sender_email}.',
-                        source='Manual'
+                # Try to resolve the ProcurementRequest by several strategies:
+                proc_request = None
+                # (A) Direct mapping via REQ-ID in subject
+                if req_id_int:
+                    try:
+                        candidate = ProcurementRequest.objects.get(pk=req_id_int)
+                        if not email_date or (candidate.rfq_sent_time and email_date > candidate.rfq_sent_time):
+                            proc_request = candidate
+                    except ProcurementRequest.DoesNotExist:
+                        proc_request = None
+                # (B) Match by product name with RFQ timing
+                if not proc_request and product_name:
+                    proc_requests = ProcurementRequest.objects.filter(
+                        product__name__iexact=product_name,
+                        status__in=['rfqs-sent', 'quotes-received'],
+                        rfq_sent_time__isnull=False
                     )
-                    print(f"✅ Created a new request '{product_name}' for quote from {sender_email}.")
+                    for req in proc_requests:
+                        if not email_date or (req.rfq_sent_time and email_date > req.rfq_sent_time):
+                            proc_request = req
+                            break
+                # (B2) Token-overlap match using email/attachment text when product_name differs
+                #if not proc_request:
+                #    token_req = _find_best_matching_request_by_tokens(extracted_text, email_date=email_date)
+                #    if token_req:
+                   #     proc_request = token_req
+                # (B3) Token-overlap match based on 'product_name' string itself
+                if not proc_request and product_name:
+                    name_token_req = _find_request_by_product_name_tokens(product_name, email_date=email_date)
+                    if name_token_req:
+                        proc_request = name_token_req
+                # (C) Fallback: supplier reply mapping — find active RFQ sent to this sender
+                if not proc_request:
+                    try:
+                        mv = MasterVendor.objects.filter(email=sender_email).first()
+                        if mv:
+                            supplier_links = Supplier.objects.filter(
+                                master_vendor=mv,
+                                procurement_request__rfq_sent_time__isnull=False,
+                                procurement_request__status__in=['rfqs-sent','quotes-received']
+                            ).order_by('-procurement_request__rfq_sent_time')
+                            # Choose the supplier-linked request that also token-matches the email text
+                            best_link = None
+                            best_score = 0
+                            for link in supplier_links:
+                                req = link.procurement_request
+                                name_parts = []
+                                if req.title:
+                                    name_parts.append(req.title)
+                                if req.product and req.product.name:
+                                    name_parts.append(req.product.name)
+                                tokens = _normalize_product_tokens(' '.join(name_parts))
+                                score = _token_overlap_count(extracted_text, tokens)
+                                alpha_score = _alpha_overlap_count(extracted_text, tokens)
+                                if score >= 2 and alpha_score >= 1:
+                                    if score > best_score:
+                                        best_link = req
+                                        best_score = score
+                            if best_link and (not email_date or (best_link.rfq_sent_time and email_date > best_link.rfq_sent_time)):
+                                proc_request = best_link
+                    except Exception:
+                        pass
+                # (D) Do NOT auto-create new requests from quotes; instead, skip if no match
+                if not proc_request:
+                    print(f"⚠️ No matching RFQ found for product '{product_name}'. Skipping quote from {sender_email}.")
+                    continue
                 master_vendor, _ = MasterVendor.objects.get_or_create(
                     email=sender_email, defaults={'name': vendor_display_name}
                 )
