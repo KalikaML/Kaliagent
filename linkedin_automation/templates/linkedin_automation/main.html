@@ -1,0 +1,1381 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkedIn Marketing Agent - Dashboard</title>
+    <style>
+      * {
+        .btn-clear-neon {
+          position: relative;
+          display: inline-block;
+          padding: 12px 24px;
+          background: white;
+          border: 3px solid #ff006e;
+          border-radius: 10px;
+          color: #ff006e;
+          font-weight: bold;
+          text-decoration: none;
+          text-transform: uppercase;
+          font-size: 12px;
+          letter-spacing: 0.5px;
+          overflow: hidden;
+          transition: all 0.3s;
+          box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-clear-neon:hover {
+          background: #ff006e;
+          color: white;
+          box-shadow:
+            0 0 25px #ff006e,
+            0 0 50px #ff006e;
+          transform: translateY(-2px);
+        }
+
+        .btn-clear-neon span {
+          position: relative;
+          z-index: 1;
+        }
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #333;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      header {
+        background: white;
+        padding: 20px 30px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+      }
+
+      h1 {
+        color: #0077b5;
+        font-size: 28px;
+        margin-bottom: 5px;
+      }
+
+      .subtitle {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .messages {
+        margin-bottom: 20px;
+      }
+
+      .message {
+        padding: 12px 20px;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        animation: slideIn 0.3s ease;
+      }
+
+      .message.success {
+        background: #d4edda;
+        color: #155724;
+        border-left: 4px solid #28a745;
+      }
+
+      .message.error {
+        background: #f8d7da;
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+      }
+
+      .message.info {
+        background: #d1ecf1;
+        color: #0c5460;
+        border-left: 4px solid #17a2b8;
+      }
+
+      .dashboard-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 20px;
+        margin-bottom: 20px;
+      }
+
+      .panel {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .panel h2 {
+        color: #0077b5;
+        font-size: 20px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .form-group {
+        margin-bottom: 15px;
+      }
+
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 5px;
+        color: #555;
+        font-size: 14px;
+      }
+
+      input[type="text"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        font-size: 14px;
+        transition: border-color 0.3s;
+      }
+
+      input[type="text"]:focus,
+      textarea:focus,
+      select:focus {
+        outline: none;
+        border-color: #0077b5;
+      }
+
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+        font-family: inherit;
+      }
+
+      .btn {
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-block;
+      }
+
+      .btn-primary {
+        background: #0077b5;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #005885;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 119, 181, 0.3);
+      }
+
+      .btn-success {
+        background: #28a745;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #218838;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #5a6268;
+      }
+
+      .btn-danger {
+        background: #dc3545;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #c82333;
+      }
+
+      .btn-block {
+        width: 100%;
+      }
+
+      .reddit-posts {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 10px;
+      }
+
+      .reddit-post-item {
+        padding: 12px;
+        border-bottom: 1px solid #e0e0e0;
+        cursor: pointer;
+        transition: background 0.2s;
+      }
+
+      .reddit-post-item:hover {
+        background: #f8f9fa;
+      }
+
+      .reddit-post-item.selected {
+        background: #e3f2fd;
+        border-left: 4px solid #0077b5;
+      }
+
+      .post-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+      }
+
+      .post-meta {
+        font-size: 12px;
+        color: #666;
+      }
+
+      .images-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+        gap: 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 2px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 10px;
+      }
+
+      .image-item {
+        position: relative;
+        cursor: pointer;
+        border-radius: 6px;
+        overflow: hidden;
+        transition: transform 0.2s;
+      }
+
+      .image-item:hover {
+        transform: scale(1.05);
+      }
+
+      .image-item img {
+        width: 100%;
+        height: 120px;
+        object-fit: cover;
+      }
+
+      .image-item.selected {
+        border: 3px solid #0077b5;
+      }
+
+      .image-source-badge {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 3px 8px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        z-index: 10;
+      }
+
+      .badge-google {
+        background: linear-gradient(135deg, #4285f4 0%, #34a853 100%);
+      }
+
+      .badge-ai {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      }
+
+      .preview-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 15px;
+      }
+
+      .preview-title {
+        font-weight: 600;
+        margin-bottom: 10px;
+        color: #555;
+      }
+
+      .preview-content {
+        background: white;
+        padding: 15px;
+        border-radius: 6px;
+        border: 1px solid #e0e0e0;
+        min-height: 100px;
+      }
+
+      .preview-image {
+        max-width: 100%;
+        border-radius: 6px;
+        margin-top: 10px;
+      }
+
+      .automation-console {
+        background: #1e1e1e;
+        color: #00ff00;
+        padding: 20px;
+        border-radius: 12px;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        max-height: 250px;
+        overflow-y: auto;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+      }
+
+      .console-line {
+        margin-bottom: 5px;
+        line-height: 1.5;
+      }
+
+      .file-upload {
+        border: 2px dashed #0077b5;
+        border-radius: 6px;
+        padding: 20px;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .file-upload:hover {
+        background: #f0f8ff;
+        border-color: #005885;
+      }
+
+      input[type="file"] {
+        display: none;
+      }
+
+      .flex-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .full-width {
+        grid-column: 1 / -1;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(-20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 40px;
+        color: #999;
+      }
+
+      .empty-state svg {
+        width: 64px;
+        height: 64px;
+        margin-bottom: 10px;
+        opacity: 0.5;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>🚀 LinkedIn Marketing Agent</h1>
+        <p class="subtitle">
+          Source content from Reddit, customize with AI, and post to LinkedIn
+        </p>
+      </header>
+
+      <!-- Messages -->
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+        <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <!-- Navigation Buttons -->
+      <div
+        style="
+          margin-bottom: 20px;
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          justify-content: center;
+        "
+      >
+        <a
+          href="{% url 'core:agent_selector' %}"
+          class="btn-clear-neon"
+          style="border-color: #9c27b0; color: #9c27b0"
+        >
+          <span>← Back to Agents</span>
+        </a>
+        <a
+          href="?clear=1"
+          class="btn-clear-neon"
+          style="border-color: #ff006e; color: #ff006e"
+        >
+          <span>✨ Clear Dashboard</span>
+        </a>
+        <a
+          href="{% url 'linkedin_automation:history' %}"
+          class="btn-clear-neon"
+          style="border-color: #667eea; color: #667eea"
+        >
+          <span>📊 View History</span>
+        </a>
+        <a
+          href="{% url 'linkedin_automation:pdf_to_post' %}"
+          class="btn-clear-neon"
+          style="border-color: #38ef7d; color: #38ef7d"
+        >
+          <span>📄 PDF to Post</span>
+        </a>
+        <a
+          href="{% url 'linkedin_automation:combine_sources' %}"
+          class="btn-clear-neon"
+          style="border-color: #ff9800; color: #ff9800"
+        >
+          <span>🔗 Combine Sources</span>
+        </a>
+        <a
+          href="{% url 'linkedin_automation:finder' %}"
+          class="btn-clear-neon"
+          style="border-color: #00bcd4; color: #00bcd4"
+        >
+          <span>🔍 Profile Finder</span>
+        </a>
+        <a
+          href="{% url 'linkedin_automation:saved_profiles' %}"
+          class="btn-clear-neon"
+          style="border-color: #ffd700; color: #ffd700"
+        >
+          <span>💾 Saved Leads</span>
+        </a>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Reddit Search Panel -->
+        <div class="panel">
+          <h2>🔍 Step 1: Search Reddit Articles</h2>
+          <form
+            method="post"
+            action="{% url 'linkedin_automation:search_reddit' %}"
+          >
+            {% csrf_token %}
+            <div class="form-group">
+              <label for="keyword">Enter Keyword:</label>
+              <input
+                type="text"
+                id="keyword"
+                name="keyword"
+                placeholder="e.g., artificial intelligence, startup tips, marketing"
+                value="{{ keyword }}"
+                required
+              />
+            </div>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 15px;
+              "
+            >
+              <div class="form-group" style="margin-bottom: 0">
+                <label for="sort_by">Sort By:</label>
+                <select
+                  id="sort_by"
+                  name="sort_by"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                  "
+                >
+                  <option
+                    value="hot"
+                    {%
+                    if
+                    sort_by=""
+                    ="hot"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    🔥 Hot
+                  </option>
+                  <option
+                    value="top"
+                    {%
+                    if
+                    sort_by=""
+                    ="top"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    ⭐ Top
+                  </option>
+                  <option
+                    value="new"
+                    {%
+                    if
+                    sort_by=""
+                    ="new"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    🆕 New
+                  </option>
+                  <option
+                    value="relevance"
+                    {%
+                    if
+                    sort_by=""
+                    ="relevance"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    🎯 Relevance
+                  </option>
+                </select>
+              </div>
+              <div class="form-group" style="margin-bottom: 0">
+                <label for="time_filter">Time Period:</label>
+                <select
+                  id="time_filter"
+                  name="time_filter"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                  "
+                >
+                  <option
+                    value="day"
+                    {%
+                    if
+                    time_filter=""
+                    ="day"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    Today
+                  </option>
+                  <option
+                    value="week"
+                    {%
+                    if
+                    time_filter=""
+                    ="week"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    This Week
+                  </option>
+                  <option
+                    value="month"
+                    {%
+                    if
+                    time_filter=""
+                    ="month"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    This Month
+                  </option>
+                  <option
+                    value="year"
+                    {%
+                    if
+                    time_filter=""
+                    ="year"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    This Year
+                  </option>
+                  <option
+                    value="all"
+                    {%
+                    if
+                    time_filter=""
+                    ="all"
+                    %}selected{%
+                    endif
+                    %}
+                  >
+                    All Time
+                  </option>
+                </select>
+              </div>
+            </div>
+
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 10px;
+                margin-bottom: 15px;
+              "
+            >
+              <div class="form-group" style="margin-bottom: 0">
+                <label for="min_words">Min Word Count:</label>
+                <input
+                  type="number"
+                  id="min_words"
+                  name="min_words"
+                  value="{{ min_words|default:'200' }}"
+                  min="50"
+                  max="2000"
+                  step="50"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                  "
+                />
+              </div>
+              <div class="form-group" style="margin-bottom: 0">
+                <label for="min_score">Min Upvotes:</label>
+                <input
+                  type="number"
+                  id="min_score"
+                  name="min_score"
+                  value="{{ min_score|default:'10' }}"
+                  min="0"
+                  max="1000"
+                  step="5"
+                  style="
+                    width: 100%;
+                    padding: 10px;
+                    border: 1px solid #ddd;
+                    border-radius: 6px;
+                  "
+                />
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block">
+              🔍 Search Quality Articles
+            </button>
+          </form>
+
+          {% if reddit_posts %}
+          <div class="reddit-posts" style="margin-top: 15px">
+            <div
+              style="
+                background: #e8f5e9;
+                padding: 10px;
+                border-radius: 6px;
+                margin-bottom: 10px;
+                text-align: center;
+              "
+            >
+              <strong
+                >📊 Found {{ reddit_posts|length }} high-quality
+                articles</strong
+              >
+            </div>
+            {% for post in reddit_posts %}
+            <form
+              method="post"
+              action="{% url 'linkedin_automation:select_post' %}"
+              style="margin: 0"
+            >
+              {% csrf_token %}
+              <input
+                type="hidden"
+                name="post_index"
+                value="{{ forloop.counter0 }}"
+              />
+              <div
+                class="reddit-post-item {% if selected_post.id == post.id %}selected{% endif %}"
+                onclick="this.parentElement.submit()"
+              >
+                <div class="post-title">{{ post.title }}</div>
+                <div class="post-meta">
+                  r/{{ post.subreddit }} • 🔥 {{ post.score }} upvotes • 💬 {{
+                  post.num_comments }} comments • 📝 {{ post.word_count }} words
+                  {% if post.quality_score %}
+                  <span
+                    style="
+                      background: #4caf50;
+                      color: white;
+                      padding: 2px 8px;
+                      border-radius: 12px;
+                      font-size: 11px;
+                      margin-left: 5px;
+                    "
+                  >
+                    ⭐ Quality: {{ post.quality_score }}
+                  </span>
+                  {% endif %}
+                </div>
+              </div>
+            </form>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+        <!-- AI Rewriting Panel -->
+        <div class="panel">
+          <h2>🤖 Step 2: Rewrite with Gemini AI</h2>
+
+          {% if selected_post %}
+          <div class="preview-section">
+            <div class="preview-title">Selected Post:</div>
+            <div class="preview-content">
+              <strong>{{ selected_post.title }}</strong>
+              <p style="margin-top: 10px; font-size: 14px; color: #666">
+                {{ selected_post.content|truncatewords:50 }}
+              </p>
+            </div>
+          </div>
+          {% endif %}
+
+          <form
+            method="post"
+            action="{% url 'linkedin_automation:rewrite' %}"
+            style="margin-top: 15px"
+          >
+            {% csrf_token %}
+            <div class="form-group">
+              <label
+                style="font-weight: 600; margin-bottom: 10px; display: block"
+                >📝 Format Style:</label
+              >
+              <div style="display: flex; gap: 15px; margin-bottom: 15px">
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                    padding: 10px 15px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    flex: 1;
+                    transition: all 0.3s;
+                  "
+                  class="format-option"
+                >
+                  <input
+                    type="radio"
+                    name="format_style"
+                    value="paragraph"
+                    {%
+                    if
+                    not
+                    format_style
+                    or
+                    format_style=""
+                    ="paragraph"
+                    %}checked{%
+                    endif
+                    %}
+                    style="margin-right: 8px"
+                  />
+                  <span>📄 Paragraph Style</span>
+                </label>
+                <label
+                  style="
+                    display: flex;
+                    align-items: center;
+                    cursor: pointer;
+                    padding: 10px 15px;
+                    border: 2px solid #e0e0e0;
+                    border-radius: 8px;
+                    flex: 1;
+                    transition: all 0.3s;
+                  "
+                  class="format-option"
+                >
+                  <input
+                    type="radio"
+                    name="format_style"
+                    value="points"
+                    {%
+                    if
+                    format_style=""
+                    ="points"
+                    %}checked{%
+                    endif
+                    %}
+                    style="margin-right: 8px"
+                  />
+                  <span>📋 Point-wise List</span>
+                </label>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="custom_instruction"
+                >Style & Tone Instructions (Optional):</label
+              >
+              <textarea
+                id="custom_instruction"
+                name="custom_instruction"
+                placeholder="e.g., Write in a funny tone, Avoid jargon, Keep it under 200 words"
+              >
+{{ custom_instruction }}</textarea
+              >
+            </div>
+            <button
+              type="submit"
+              class="btn btn-success btn-block"
+              {%
+              if
+              not
+              selected_post
+              %}disabled{%
+              endif
+              %}
+            >
+              ✨ Rewrite with Gemini
+            </button>
+          </form>
+
+          <style>
+            .format-option:has(input:checked) {
+              border-color: #0077b5 !important;
+              background: #f0f7ff !important;
+            }
+            .format-option:hover {
+              border-color: #0077b5 !important;
+            }
+          </style>
+
+          {% if rewritten_text %}
+          <div class="preview-section" style="margin-top: 15px">
+            <div class="preview-title">AI-Generated Content (Editable):</div>
+            <textarea
+              id="editableContent"
+              style="
+                width: 100%;
+                min-height: 200px;
+                padding: 15px;
+                border: 2px solid #e0e0e0;
+                border-radius: 8px;
+                font-family:
+                  -apple-system, system-ui, BlinkMacSystemFont,
+                  &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;,
+                  Arial, sans-serif;
+                font-size: 14px;
+                line-height: 1.6;
+                resize: vertical;
+                white-space: pre-wrap;
+              "
+            >
+{{ rewritten_text }}</textarea
+            >
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Image Selection Panel -->
+        <div class="panel">
+          <h2>🖼️ Step 3: Select Visual Asset</h2>
+
+          <form
+            method="post"
+            action="{% url 'linkedin_automation:search_images' %}"
+          >
+            {% csrf_token %}
+            <div class="form-group">
+              <label for="image_source">Image Source:</label>
+              <select id="image_source" name="image_source">
+                <option
+                  value="pexels"
+                  {%
+                  if
+                  image_source=""
+                  ="pexels"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Pexels
+                </option>
+                <option
+                  value="giphy"
+                  {%
+                  if
+                  image_source=""
+                  ="giphy"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Giphy
+                </option>
+                <option
+                  value="serpapi"
+                  {%
+                  if
+                  image_source=""
+                  ="serpapi"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  SerpApi (Google Images)
+                </option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="image_query">Search Query:</label>
+              <input
+                type="text"
+                id="image_query"
+                name="image_query"
+                placeholder="e.g., business meeting, technology"
+                value="{{ image_query }}"
+              />
+            </div>
+            <button type="submit" class="btn btn-primary btn-block">
+              Search Images
+            </button>
+          </form>
+
+          <div style="margin: 15px 0; text-align: center; color: #999">OR</div>
+
+          <!-- AI Image Generation -->
+          {% if rewritten_text %}
+          <form
+            method="post"
+            action="{% url 'linkedin_automation:generate_image_ai' %}"
+          >
+            {% csrf_token %}
+            <button
+              type="submit"
+              class="btn btn-success btn-block"
+              style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                border: none;
+                margin-bottom: 15px;
+              "
+            >
+              🎨 Generate AI Image from Post
+            </button>
+            <p
+              style="
+                font-size: 11px;
+                color: #666;
+                text-align: center;
+                margin-top: -10px;
+              "
+            >
+              Uses AI to create a professional visual based on your content
+            </p>
+          </form>
+
+          <div style="margin: 15px 0; text-align: center; color: #999">OR</div>
+          {% endif %}
+
+          <form
+            method="post"
+            action="{% url 'linkedin_automation:upload_image' %}"
+            enctype="multipart/form-data"
+          >
+            {% csrf_token %}
+            <label for="image_file" class="file-upload">
+              <div style="font-size: 32px; margin-bottom: 10px">📁</div>
+              <div style="font-weight: 600; color: #0077b5">
+                Upload from Computer
+              </div>
+              <div style="font-size: 12px; color: #999; margin-top: 5px">
+                Click to browse (Mac M1)
+              </div>
+            </label>
+            <input
+              type="file"
+              id="image_file"
+              name="image_file"
+              accept="image/*"
+              onchange="this.form.submit()"
+            />
+          </form>
+
+          {% if images %}
+          <div class="images-grid" style="margin-top: 15px">
+            {% for image in images %}
+            <form
+              method="post"
+              action="{% url 'linkedin_automation:select_image' %}"
+              style="margin: 0"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="image_url" value="{{ image.url }}" />
+              <div
+                class="image-item {% if selected_image_url == image.url %}selected{% endif %}"
+                onclick="this.parentElement.submit()"
+              >
+                {% if image.is_generated %} {% if 'google' in image.source %}
+                <span class="image-source-badge badge-google"
+                  >🌟 Google Imagen</span
+                >
+                {% else %}
+                <span class="image-source-badge badge-ai">🎨 AI Generated</span>
+                {% endif %} {% endif %}
+                <img src="{{ image.thumb }}" alt="Image option" />
+              </div>
+            </form>
+            {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Live Preview & Post Panel -->
+        <div class="panel">
+          <h2>👁️ Step 4: Preview & Post</h2>
+
+          <div class="preview-section">
+            <div class="preview-title">Final LinkedIn Post Preview:</div>
+            <div
+              style="
+                background: #f8f9fa;
+                border: 2px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 20px;
+                margin: 15px 0;
+              "
+            >
+              <div
+                style="
+                  display: flex;
+                  align-items: center;
+                  gap: 10px;
+                  margin-bottom: 15px;
+                  padding-bottom: 15px;
+                  border-bottom: 1px solid #ddd;
+                "
+              >
+                <div
+                  style="
+                    width: 40px;
+                    height: 40px;
+                    border-radius: 50%;
+                    background: linear-gradient(135deg, #0077b5, #00a0dc);
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    color: white;
+                    font-weight: bold;
+                  "
+                >
+                  YOU
+                </div>
+                <div>
+                  <div style="font-weight: 600; color: #000">Your Name</div>
+                  <div style="font-size: 12px; color: #666">Just now • 🌐</div>
+                </div>
+              </div>
+              {% if rewritten_text %}
+              <div
+                id="previewText"
+                style="
+                  white-space: pre-wrap;
+                  font-family:
+                    -apple-system, system-ui, BlinkMacSystemFont,
+                    &quot;Segoe UI&quot;, Roboto, &quot;Helvetica Neue&quot;,
+                    Arial, sans-serif;
+                  font-size: 14px;
+                  line-height: 1.6;
+                  color: #000;
+                  word-wrap: break-word;
+                "
+              >
+                {{ rewritten_text }}
+              </div>
+              {% else %}
+              <div class="empty-state">
+                <div>📝</div>
+                <div>No content yet. Complete steps 1-2 first.</div>
+              </div>
+              {% endif %} {% if selected_image_url %}
+              <img
+                src="{{ selected_image_url }}"
+                alt="Selected image"
+                style="width: 100%; border-radius: 8px; margin-top: 15px"
+              />
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Replace the form around line 380-390 with this: -->
+
+          <form
+            method="POST"
+            action="{% url 'linkedin_automation:post_linkedin' %}"
+            style="margin-top: 15px"
+          >
+            {% csrf_token %}
+
+            <!-- Hidden fields to pass the content and image -->
+            <input
+              type="hidden"
+              id="finalContent"
+              name="rewritten_text"
+              value="{{ rewritten_text }}"
+            />
+            <input
+              type="hidden"
+              name="image_url"
+              value="{{ selected_image_url }}"
+            />
+
+            <button
+              type="submit"
+              class="btn-post-linkedin"
+              {%
+              if
+              not
+              rewritten_text
+              %}disabled{%
+              endif
+              %}
+            >
+              <span>🚀 Post to LinkedIn</span>
+            </button>
+          </form>
+
+          <style>
+            .btn-post-linkedin {
+              position: relative;
+              display: block;
+              width: 100%;
+              padding: 16px 30px;
+              background: linear-gradient(135deg, #0077b5 0%, #00a0dc 100%);
+              border: none;
+              border-radius: 10px;
+              color: white;
+              font-weight: bold;
+              text-transform: uppercase;
+              font-size: 14px;
+              letter-spacing: 1px;
+              cursor: pointer;
+              transition: all 0.4s ease;
+              box-shadow: 0 4px 15px rgba(0, 119, 181, 0.3);
+              overflow: hidden;
+            }
+
+            .btn-post-linkedin:before {
+              content: "";
+              position: absolute;
+              top: 0;
+              left: -100%;
+              width: 100%;
+              height: 100%;
+              background: linear-gradient(
+                90deg,
+                transparent,
+                rgba(255, 255, 255, 0.3),
+                transparent
+              );
+              transition: left 0.5s;
+            }
+
+            .btn-post-linkedin:hover:before {
+              left: 100%;
+            }
+
+            .btn-post-linkedin:hover {
+              transform: translateY(-3px);
+              box-shadow: 0 6px 25px rgba(0, 119, 181, 0.5);
+              background: linear-gradient(135deg, #005885 0%, #0088cc 100%);
+            }
+
+            .btn-post-linkedin:active {
+              transform: translateY(-1px);
+              box-shadow: 0 3px 12px rgba(0, 119, 181, 0.4);
+            }
+
+            .btn-post-linkedin:disabled {
+              background: #ccc;
+              cursor: not-allowed;
+              box-shadow: none;
+              transform: none;
+            }
+
+            .btn-post-linkedin:disabled:hover {
+              transform: none;
+              background: #ccc;
+            }
+
+            .btn-post-linkedin span {
+              position: relative;
+              z-index: 1;
+            }
+          </style>
+
+          <form
+            method="post"
+            action="{% url 'linkedin_automation:clear_state' %}"
+            style="margin-top: 10px"
+          >
+            {% csrf_token %}
+            <button type="submit" class="btn btn-secondary btn-block">
+              🔄 Start New Post
+            </button>
+          </form>
+
+          <!-- Find the "Recent Posts" section (around line 450) and replace it with this: -->
+
+          {% if recent_posts %}
+          <div style="margin-top: 20px">
+            <div
+              class="preview-title"
+              style="
+                font-size: 16px;
+                font-weight: 700;
+                color: #0077b5;
+                margin-bottom: 12px;
+              "
+            >
+              📋 Recent Posts
+            </div>
+            <div
+              style="
+                background: white;
+                border-radius: 8px;
+                overflow: hidden;
+                border: 1px solid #e0e0e0;
+              "
+            >
+              {% for post in recent_posts %}
+              <div
+                style="
+                  padding: 12px 15px;
+                  border-bottom: 1px solid #f0f0f0;
+                  display: flex;
+                  justify-content: space-between;
+                  align-items: center;
+                "
+              >
+                <div style="flex: 1">
+                  <span
+                    style="display: inline-block; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700; 
+                    {% if post.status == 'posted' %}background: #d4edda; color: #155724;
+                    {% elif post.status == 'draft' %}background: #fff3cd; color: #856404;
+                    {% else %}background: #f8d7da; color: #721c24;{% endif %}"
+                  >
+                    {{ post.status|upper }}
+                  </span>
+                  <span
+                    style="
+                      margin-left: 10px;
+                      font-size: 13px;
+                      color: #333;
+                      font-weight: 500;
+                    "
+                  >
+                    {{ post.title|default:"Untitled"|truncatewords:8 }}
+                  </span>
+                </div>
+                <div style="font-size: 12px; color: #999">
+                  {{ post.created_at|date:"M d, H:i" }}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            <a
+              href="{% url 'linkedin_automation:history' %}"
+              style="
+                display: block;
+                text-align: center;
+                padding: 10px;
+                background: #f8f9fa;
+                color: #0077b5;
+                text-decoration: none;
+                font-weight: 600;
+                border-radius: 0 0 8px 8px;
+                font-size: 13px;
+              "
+            >
+              View All History →
+            </a>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Automation Console -->
+      <div class="panel full-width">
+        <h2>🖥️ Automation Console</h2>
+        <div class="automation-console">
+          {% if logs %} {% for log in logs %}
+          <div class="console-line">{{ log }}</div>
+          {% endfor %} {% else %}
+          <div class="console-line">
+            💻 System ready. Waiting for commands...
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Sync editable content with preview and form
+      const editableContent = document.getElementById("editableContent");
+      const previewText = document.getElementById("previewText");
+      const finalContent = document.getElementById("finalContent");
+
+      if (editableContent && previewText && finalContent) {
+        editableContent.addEventListener("input", function () {
+          previewText.textContent = this.value;
+          finalContent.value = this.value;
+        });
+
+        // Focus styling
+        editableContent.addEventListener("focus", function () {
+          this.style.borderColor = "#667eea";
+          this.style.boxShadow = "0 0 0 3px rgba(102, 126, 234, 0.1)";
+        });
+
+        editableContent.addEventListener("blur", function () {
+          this.style.borderColor = "#e0e0e0";
+          this.style.boxShadow = "none";
+        });
+      }
+    </script>
+  </body>
+</html>

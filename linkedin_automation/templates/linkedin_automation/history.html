@@ -1,0 +1,384 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Post History - LinkedIn Agent</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+    <style>
+      body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+      }
+      .container-main {
+        padding: 40px 20px;
+      }
+      .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        margin-bottom: 30px;
+      }
+      .stat-item {
+        text-align: center;
+        padding: 20px;
+      }
+      .stat-number {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #667eea;
+      }
+      .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+      }
+      .post-card {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        transition: transform 0.3s ease;
+      }
+      .post-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+      }
+      .post-image {
+        width: 100px;
+        height: 100px;
+        object-fit: cover;
+        border-radius: 8px;
+        margin-right: 15px;
+      }
+      .status-badge {
+        padding: 5px 15px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+      }
+      .status-posted {
+        background: #d4edda;
+        color: #155724;
+      }
+      .status-draft {
+        background: #fff3cd;
+        color: #856404;
+      }
+      .status-failed {
+        background: #f8d7da;
+        color: #721c24;
+      }
+      .btn-back {
+        background: white;
+        color: #667eea;
+        border: 2px solid white;
+        padding: 10px 25px;
+        border-radius: 10px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+      }
+      .btn-back:hover {
+        background: transparent;
+        color: white;
+      }
+      .filter-section {
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container-main">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="text-white"><i class="fas fa-history"></i> Post History</h1>
+        <div>
+          <button
+            onclick="clearAllHistory()"
+            class="btn-back"
+            style="
+              margin-right: 10px;
+              background: #ff006e;
+              color: white;
+              border-color: #ff006e;
+            "
+          >
+            <i class="fas fa-trash-alt"></i> Clear All History
+          </button>
+          <a
+            href="{% url 'linkedin_automation:finder' %}"
+            class="btn-back"
+            style="margin-right: 10px"
+          >
+            <i class="fas fa-search"></i> Finder
+          </a>
+          <a
+            href="{% url 'linkedin_automation:saved_profiles' %}"
+            class="btn-back"
+            style="margin-right: 10px"
+          >
+            <i class="fas fa-save"></i> Leads
+          </a>
+          <a href="{% url 'linkedin_automation:dashboard' %}" class="btn-back">
+            <i class="fas fa-arrow-left"></i> Dashboard
+          </a>
+        </div>
+      </div>
+
+      <div class="stats-card">
+        <div class="row">
+          <div class="col-md-3 stat-item">
+            <div class="stat-number">{{ stats.total_posts }}</div>
+            <div class="stat-label">Total Posts</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="stat-number text-success">{{ stats.posted }}</div>
+            <div class="stat-label">Posted</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="stat-number text-warning">{{ stats.drafts }}</div>
+            <div class="stat-label">Drafts</div>
+          </div>
+          <div class="col-md-3 stat-item">
+            <div class="stat-number text-danger">{{ stats.failed }}</div>
+            <div class="stat-label">Failed</div>
+          </div>
+        </div>
+        <div class="text-center mt-3">
+          <h5>
+            Success Rate:
+            <span class="text-success">{{ stats.success_rate }}%</span>
+          </h5>
+        </div>
+      </div>
+
+      <div class="filter-section">
+        <form method="GET" class="row g-3">
+          <div class="col-md-4">
+            <select
+              name="status"
+              class="form-select"
+              onchange="this.form.submit()"
+            >
+              <option
+                value="all"
+                {%
+                if
+                status_filter=""
+                ="all"
+                %}selected{%
+                endif
+                %}
+              >
+                All Status
+              </option>
+              <option
+                value="posted"
+                {%
+                if
+                status_filter=""
+                ="posted"
+                %}selected{%
+                endif
+                %}
+              >
+                Posted
+              </option>
+              <option
+                value="draft"
+                {%
+                if
+                status_filter=""
+                ="draft"
+                %}selected{%
+                endif
+                %}
+              >
+                Drafts
+              </option>
+              <option
+                value="failed"
+                {%
+                if
+                status_filter=""
+                ="failed"
+                %}selected{%
+                endif
+                %}
+              >
+                Failed
+              </option>
+            </select>
+          </div>
+          <div class="col-md-6">
+            <input
+              type="text"
+              name="search"
+              class="form-control"
+              placeholder="Search posts..."
+              value="{{ search_query }}"
+            />
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-search"></i> Search
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div class="row">
+        {% for post in linkedin_posts %}
+        <div class="col-12">
+          <div class="post-card">
+            <div class="d-flex">
+              {% if post.image_url %}
+              <img
+                src="{{ post.image_thumbnail|default:post.image_url }}"
+                alt="Post image"
+                class="post-image"
+              />
+              {% else %}
+              <div
+                class="post-image bg-secondary d-flex align-items-center justify-content-center"
+              >
+                <i class="fas fa-image fa-2x text-white"></i>
+              </div>
+              {% endif %}
+
+              <div class="flex-grow-1">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="mb-1">{{ post.title|default:"Untitled Post" }}</h5>
+                  <span class="status-badge status-{{ post.status }}">
+                    {{ post.status|upper }}
+                  </span>
+                </div>
+
+                <p class="text-muted mb-2">
+                  {{ post.content|truncatewords:30 }}
+                </p>
+
+                <div class="d-flex justify-content-between align-items-center">
+                  <small class="text-muted">
+                    <i class="far fa-clock"></i>
+                    {% if post.posted_at %} Posted: {{ post.posted_at|date:"M d,
+                    Y H:i" }} {% else %} Created: {{ post.created_at|date:"M d,
+                    Y H:i" }} {% endif %}
+                  </small>
+
+                  <div>
+                    {% if post.post_id %}
+                    <a
+                      href="https://www.linkedin.com/feed/update/{{ post.post_id }}"
+                      target="_blank"
+                      class="btn btn-sm btn-outline-primary me-2"
+                    >
+                      <i class="fab fa-linkedin"></i> View
+                    </a>
+                    {% endif %}
+                    <form
+                      method="POST"
+                      action="{% url 'linkedin_automation:linkedin_automation:delete_history' post.id %}"
+                      style="display: inline"
+                    >
+                      {% csrf_token %}
+                      <button
+                        type="submit"
+                        class="btn btn-sm btn-outline-danger"
+                        onclick="return confirm('Delete this post?');"
+                      >
+                        <i class="fas fa-trash"></i>
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+          <div class="post-card text-center py-5">
+            <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+            <h4 class="text-muted">No posts found</h4>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <div class="stats-card mt-4">
+        <h4 class="mb-4"><i class="fas fa-list"></i> Recent Activity</h4>
+        <div class="list-group">
+          {% for history in post_history %}
+          <div class="list-group-item">
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">
+                {% if history.success %}
+                <i class="fas fa-check-circle text-success"></i>
+                {% else %}
+                <i class="fas fa-times-circle text-danger"></i>
+                {% endif %} Post Attempt
+              </h6>
+              <small>{{ history.timestamp|date:"M d, Y H:i" }}</small>
+            </div>
+            <p class="mb-1 small">
+              {{ history.rewritten_content|truncatewords:20 }}
+            </p>
+            {% if not history.success and history.error_message %}
+            <small class="text-danger"
+              >Error: {{ history.error_message }}</small
+            >
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      function clearAllHistory() {
+        if (
+          confirm(
+            "⚠️ Are you sure you want to delete ALL post history? This action cannot be undone!",
+          )
+        ) {
+          fetch('{% url 'linkedin_automation:clear_all_history' %}', {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": "{{ csrf_token }}",
+              "Content-Type": "application/json",
+            },
+          })
+            .then((response) => response.json())
+            .then((data) => {
+              if (data.success) {
+                alert("✓ " + data.message);
+                window.location.reload();
+              } else {
+                alert("❌ Error: " + data.error);
+              }
+            })
+            .catch((error) => {
+              alert("❌ Failed to clear history: " + error.message);
+            });
+        }
+      }
+    </script>
+  </body>
+</html>

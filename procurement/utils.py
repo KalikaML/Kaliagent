@@ -15,8 +15,8 @@ from django.core.mail import EmailMessage
 from .models import ProcurementRequest, Supplier, Quote, Product, MasterVendor
 import gspread
 from google.oauth2.service_account import Credentials
-from django.conf import settings
 from datetime import datetime
+from .gsheet_auth import get_google_sheets_credentials, get_suppliers_csv_data
 
 try:
     import openpyxl
@@ -365,42 +365,15 @@ from functools import lru_cache
 
 @lru_cache(maxsize=1)
 def _load_previous_suppliers_csv():
-    path = getattr(settings, 'PREVIOUS_SUPPLIERS_CSV', None)
-    if not path:
-        print("[CSV Loader] PREVIOUS_SUPPLIERS_CSV is not set; skipping historical suppliers.")
-        return []
-    if not os.path.exists(path):
-        print(f"[CSV Loader] Historical suppliers CSV not found at: {path}")
-        return []
-    rows = []
-    try:
-        with open(path, 'rb') as f:
-            raw = f.read()
-        for enc in ('utf-8', 'utf-8-sig', 'latin-1', 'iso-8859-1'):
-            try:
-                text = raw.decode(enc)
-                break
-            except UnicodeDecodeError:
-                text = None
-        if text is None:
-            return []
-        import csv as _csv
-        reader = _csv.DictReader(text.splitlines())
-        for row in reader:
-            # Normalize keys and strip values
-            norm = {}
-            for k, v in row.items():
-                if k is None:
-                    continue
-                key = str(k).strip().lower()
-                val = (v.strip() if isinstance(v, str) else ('' if v is None else v))
-                norm[key] = val
-            rows.append(norm)
-    except Exception as e:
-        print(f"Failed to load previous suppliers CSV at {path}: {e}")
-        return []
-    print(f"[CSV Loader] Loaded {len(rows)} rows from historical suppliers CSV: {path}")
-    return rows
+    """
+    Load historical suppliers CSV data from either:
+    - Secret Manager (Cloud Run deployment)
+    - Local file (development environment)
+    
+    Uses the get_suppliers_csv_data() helper which automatically detects the environment.
+    Cached to avoid re-reading the same data multiple times.
+    """
+    return get_suppliers_csv_data()
 
 def _normalize_sheet_row_to_supplier(row: dict, product_name_key: str = 'Product Name') -> dict | None:
     """Normalize a Google Sheet row (dict) into the supplier structure used by the agent.
@@ -421,21 +394,25 @@ def _normalize_sheet_row_to_supplier(row: dict, product_name_key: str = 'Product
 
 def load_previous_suppliers_from_sheet(product_name: str) -> list[dict]:
     """Load historical suppliers for a product from the master Google Sheet.
-    Uses settings.GOOGLE_SHEETS_CREDENTIALS_FILE and settings.GOOGLE_SHEET_ID.
+    Uses Google Sheets credentials from Secret Manager (Cloud Run) or local file (development).
     Filters rows where Product Name matches or contains the provided name (case-insensitive).
     """
     if not product_name:
         return []
     try:
-        creds_path = getattr(settings, 'GOOGLE_SHEETS_CREDENTIALS_FILE', None)
         sheet_id = getattr(settings, 'GOOGLE_SHEET_ID', None)
-        if not creds_path or not sheet_id:
+        if not sheet_id:
+            print("[GSHEETS Loader] GOOGLE_SHEET_ID not configured, skipping.")
             return []
         scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive'
         ]
-        creds = Credentials.from_service_account_file(creds_path, scopes=scopes)
+        try:
+            creds = get_google_sheets_credentials(scopes=scopes)
+        except Exception as cred_error:
+            print(f"[GSHEETS Loader] Failed to get credentials: {cred_error}")
+            return []
         client = gspread.authorize(creds)
         spreadsheet = client.open_by_key(sheet_id)
         MASTER_SHEET_NAME = "All Suppliers Data"
@@ -504,37 +481,46 @@ def load_previous_suppliers_from_sheet(product_name: str) -> list[dict]:
 def load_previous_suppliers_for_product(product_name: str) -> list[dict]:
     """Unified loader for Phase 0 historical suppliers.
     Priority: Google Sheet (master) → local CSV fallback.
+    Works in both local development and Cloud Run environments.
     """
-    # 1) Try Google Sheet
+    if not product_name:
+        return []
+    
+    # 1) Try Google Sheet first (preferred source)
     sheet_results = load_previous_suppliers_from_sheet(product_name)
     if sheet_results:
         return sheet_results
-    # 2) Fallback to local CSV
-    #if not product_name:
-    #    return []
-    #rows = _load_previous_suppliers_csv()
-    #if not rows:
-    #    return []
-    #target = product_name.strip().lower()
-    #results = []
-    #for r in rows:
-    #    prod = (
-    #        r.get('product') or r.get('product name') or r.get('product title') or r.get('item') or r.get('item description') or r.get('product description')
-    #    )
-    #    if not prod:
-    #        continue
-    #    pnorm = str(prod).strip().lower()
-    #    if pnorm == target or target in pnorm:
-    #        name = r.get('supplier') or r.get('supplier name') or r.get('name')
-    #        email = r.get('email')
-    #        phone = r.get('phone') or r.get('mobile') or r.get('contact')
-    #        src = r.get('source') or r.get('source link') or r.get('url') or r.get('website')
-    #        item = {'name': name or 'N/A', 'email': email, 'phone': phone, 'source_link': src}
-    #        if item['email'] or item['phone']:
-    #            results.append(item)
-    #if results:
-    #    print(f"[CSV Loader] Loaded {len(results)} historical suppliers for '{product_name}' from local CSV.")
-    #return results
+    
+    # 2) Fallback to CSV data (from Secret Manager or local file)
+    print(f"[Phase 0] No suppliers found in Google Sheets for '{product_name}', checking CSV fallback...")
+    rows = _load_previous_suppliers_csv()
+    if not rows:
+        return []
+    
+    target = product_name.strip().lower()
+    results = []
+    for r in rows:
+        # Check various possible column names for product
+        prod = (
+            r.get('product') or r.get('product name') or r.get('product title') or 
+            r.get('item') or r.get('item description') or r.get('product description')
+        )
+        if not prod:
+            continue
+        
+        pnorm = str(prod).strip().lower()
+        if pnorm == target or target in pnorm:
+            name = r.get('supplier') or r.get('supplier name') or r.get('name')
+            email = r.get('email')
+            phone = r.get('phone') or r.get('mobile') or r.get('contact')
+            src = r.get('source') or r.get('source link') or r.get('url') or r.get('website')
+            item = {'name': name or 'N/A', 'email': email, 'phone': phone, 'source_link': src}
+            if item['email'] or item['phone']:
+                results.append(item)
+    
+    if results:
+        print(f"[CSV Loader] Loaded {len(results)} historical suppliers for '{product_name}' from CSV.")
+    return results
 
 # ✨ NEW: Reusable function to send RFQs for a given request ID
 def send_rfqs_for_request(request_id, attachment=None):
@@ -701,12 +687,12 @@ def process_incoming_quotes():
         mail = imaplib.IMAP4_SSL(settings.GMAIL_IMAP_HOST)
         mail.login(settings.GMAIL_ADDRESS, settings.GMAIL_APP_PASSWORD)
         mail.select('inbox')
-        # Limit IMAP search to emails from the last 7 days
+        # Limit IMAP search to emails from the last 14 days
         from datetime import datetime, timedelta
-        seven_days_ago = (datetime.now() - timedelta(days=7)).strftime('%d-%b-%Y')
+        fourteen_days_ago = (datetime.now() - timedelta(days=14)).strftime('%d-%b-%Y')
         # Widen search: fetch recent emails since date, we'll filter by subject/body locally.
         # Using server-side OR with many terms is unreliable across providers.
-        search_criteria = f'(SINCE "{seven_days_ago}")'
+        search_criteria = f'(SINCE "{fourteen_days_ago}")'
         status, data = mail.search(None, search_criteria)
         if status != 'OK':
             print("Error searching emails.")
@@ -881,11 +867,11 @@ def process_incoming_quotes():
                         email_date = email.utils.parsedate_to_datetime(email_date_str)
                     except Exception:
                         pass
-                # Also skip emails older than 7 days from today
+                # Also skip emails older than 14 days from today
                 from datetime import datetime, timedelta
                 now = datetime.now(email_date.tzinfo) if email_date and email_date.tzinfo else datetime.now()
-                if email_date and (now - email_date).days > 7:
-                    print(f"Skipping email UID {uid} for product '{product_name}' because it is older than 7 days.")
+                if email_date and (now - email_date).days > 14:
+                    print(f"Skipping email UID {uid} for product '{product_name}' because it is older than 14 days.")
                     mail.store(e_id, '+FLAGS', '\\Seen')
                     continue
                 # Try to resolve the ProcurementRequest by several strategies:
@@ -1000,13 +986,23 @@ def append_suppliers_to_sheet(product_name, suppliers_data):
         return
 
     try:
+        sheet_id = getattr(settings, 'GOOGLE_SHEET_ID', None)
+        if not sheet_id:
+            print("   [GSHEETS] GOOGLE_SHEET_ID not configured, skipping.")
+            return
+        
         scopes = [
             'https://www.googleapis.com/auth/spreadsheets',
             'https://www.googleapis.com/auth/drive'
         ]
-        creds = Credentials.from_service_account_file(settings.GOOGLE_SHEETS_CREDENTIALS_FILE, scopes=scopes)
+        try:
+            creds = get_google_sheets_credentials(scopes=scopes)
+        except Exception as cred_error:
+            print(f"   [GSHEETS] Failed to get credentials: {cred_error}")
+            return
+        
         client = gspread.authorize(creds)
-        spreadsheet = client.open_by_key(settings.GOOGLE_SHEET_ID)
+        spreadsheet = client.open_by_key(sheet_id)
 
         MASTER_SHEET_NAME = "All Suppliers Data"
 

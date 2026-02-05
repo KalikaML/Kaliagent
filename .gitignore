@@ -32,5 +32,15 @@ Thumbs.db
 # Environment variables
 .env
 .env.*
-config
+config/
 gsheet_key_suppliers_list.json
+
+# Sensitive data files
+pending item.csv
+
+# Deployment artifacts (keep deploy.sh for reference)
+# deploy.sh is version controlled but requires env vars to run
+DEPLOYMENT_CONFIG_GUIDE.txt
+DEPLOYMENT_QUICK_REFERENCE.txt
+GITHUB_DEPLOYMENT_GUIDE.txt
+verify_deployment_ready.py

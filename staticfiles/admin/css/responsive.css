@@ -559,6 +559,10 @@ input[type="submit"], button {
     form .aligned div.radiolist:not(.inline) div + div {
         margin-top: 5px;
     }
+    
+    form .aligned fieldset div.flex-container {
+        display: unset;
+    }
 
     /* Related widget */
 

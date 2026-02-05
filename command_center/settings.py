@@ -30,8 +30,9 @@ else:
 
 
 
-DEBUG = True
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # Restrict in production
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
+# ALLOWED_HOSTS: Read from environment variable or default to localhost for local dev
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -43,6 +44,7 @@ INSTALLED_APPS = [
     'core',
     'marketing_outreach',
     'procurement',
+    'linkedin_automation',
     'command_center',
     
 ]
@@ -131,6 +133,20 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # SearXNG instance URL (leave empty to disable fallback)
 # Example: https://searxng.example.com
 SEARXNG_INSTANCE_URL = os.getenv('SEARXNG_INSTANCE_URL', '').rstrip('/')
+
+# LinkedIn Automation Agent - Reddit API
+REDDIT_CLIENT_ID = os.getenv('REDDIT_CLIENT_ID')
+REDDIT_CLIENT_SECRET = os.getenv('REDDIT_CLIENT_SECRET')
+REDDIT_USER_AGENT = os.getenv('REDDIT_USER_AGENT', 'Kaliagents LinkedIn AI v1.0')
+
+# LinkedIn Automation Agent - Image APIs
+PEXELS_API_KEY = os.getenv('PEXELS_API_KEY')
+GIPHY_API_KEY = os.getenv('GIPHY_API_KEY')
+
+# LinkedIn Automation Agent - LinkedIn Posting API
+LINKEDIN_ACCESS_TOKEN = os.getenv('LINKEDIN_ACCESS_TOKEN')
+LINKEDIN_PERSON_URN = os.getenv('LINKEDIN_PERSON_URN')
+
 
 # Logging Configuration
 LOGGING = {

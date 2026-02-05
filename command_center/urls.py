@@ -14,6 +14,8 @@ urlpatterns = [
     path('marketing/', include('marketing_outreach.urls')),
     # This tells Django to look in procurement/urls.py for any URL starting with 'procurement/'
     path('procurement/', include('procurement.urls')),
+    # This tells Django to look in linkedin_automation/urls.py for any URL starting with 'linkedin/'
+    path('linkedin/', include('linkedin_automation.urls')),
 ]
 
 # This is important for serving media files (like thumbnails) during development

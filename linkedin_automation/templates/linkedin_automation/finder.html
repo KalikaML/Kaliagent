@@ -1,0 +1,939 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>LinkedIn Finder - Company & People Search</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #333;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .header {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      h1 {
+        color: #667eea;
+        font-size: 2.5em;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        color: #666;
+        font-size: 1.1em;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .nav-btn {
+        padding: 12px 24px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 10px;
+        font-weight: 600;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+
+      .nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      .search-section {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .search-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 25px;
+        border-bottom: 2px solid #f0f0f0;
+        padding-bottom: 15px;
+      }
+
+      .tab-btn {
+        padding: 12px 30px;
+        background: transparent;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        color: #666;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .tab-btn.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-color: transparent;
+      }
+
+      .tab-btn:hover:not(.active) {
+        border-color: #667eea;
+        color: #667eea;
+      }
+
+      .search-form {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+      }
+
+      .search-input {
+        flex: 1;
+        padding: 15px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        font-size: 16px;
+        transition: border-color 0.3s;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+      }
+
+      .search-btn {
+        padding: 15px 40px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        cursor: pointer;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+      }
+
+      .search-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+      }
+
+      .results-section {
+        background: white;
+        border-radius: 20px;
+        padding: 30px;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .results-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .results-header h2 {
+        color: #667eea;
+        font-size: 1.8em;
+      }
+
+      .results-count {
+        color: #666;
+        font-size: 1.1em;
+      }
+
+      .results-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 20px;
+      }
+
+      .result-card {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 20px;
+        transition:
+          transform 0.2s,
+          box-shadow 0.2s;
+        border: 2px solid transparent;
+      }
+
+      .result-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        border-color: #667eea;
+      }
+
+      .card-header {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        margin-bottom: 15px;
+      }
+
+      .card-logo {
+        width: 60px;
+        height: 60px;
+        border-radius: 10px;
+        object-fit: cover;
+        background: #e0e0e0;
+      }
+
+      .card-title {
+        flex: 1;
+      }
+
+      .card-title h3 {
+        color: #333;
+        font-size: 1.3em;
+        margin-bottom: 5px;
+      }
+
+      .card-subtitle {
+        color: #666;
+        font-size: 0.9em;
+      }
+
+      .card-body {
+        color: #555;
+        line-height: 1.6;
+        margin-bottom: 15px;
+      }
+
+      .card-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .meta-badge {
+        padding: 6px 12px;
+        background: #667eea;
+        color: white;
+        border-radius: 20px;
+        font-size: 0.85em;
+        font-weight: 500;
+      }
+
+      .meta-badge.secondary {
+        background: #764ba2;
+      }
+
+      .meta-badge.tertiary {
+        background: #48bb78;
+      }
+
+      .btn-save {
+        background: #48bb78;
+        color: white;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        margin-top: 10px;
+        width: 100%;
+        transition: all 0.3s;
+      }
+
+      .btn-save:hover {
+        background: #38a169;
+        transform: translateY(-2px);
+      }
+
+      .btn-save:disabled {
+        background: #cbd5e0;
+        cursor: not-allowed;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #999;
+      }
+
+      .empty-state svg {
+        width: 120px;
+        height: 120px;
+        margin-bottom: 20px;
+        opacity: 0.3;
+      }
+
+      .empty-state h3 {
+        font-size: 1.5em;
+        margin-bottom: 10px;
+        color: #666;
+      }
+
+      .messages {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        max-width: 400px;
+      }
+
+      .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 10px;
+        animation: slideIn 0.3s ease;
+      }
+
+      .alert-success {
+        background: #48bb78;
+        color: white;
+      }
+
+      .alert-error {
+        background: #f56565;
+        color: white;
+      }
+
+      .alert-info {
+        background: #4299e1;
+        color: white;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <!-- Header -->
+      <div class="header">
+        <h1>🔍 LinkedIn Finder</h1>
+        <p class="subtitle">Search for companies and people on LinkedIn</p>
+        <div class="nav-links">
+          <a href="{% url 'linkedin_automation:dashboard' %}" class="nav-btn"
+            >📊 Dashboard</a
+          >
+          <a href="{% url 'linkedin_automation:history' %}" class="nav-btn"
+            >📜 History</a
+          >
+          <a
+            href="{% url 'linkedin_automation:saved_profiles' %}"
+            class="nav-btn"
+            >💾 Saved Leads</a
+          >
+        </div>
+      </div>
+
+      <!-- Messages -->
+      {% if messages %}
+      <div class="messages">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+      </div>
+      {% endif %}
+
+      <!-- Search Section -->
+      <div class="search-section">
+        <div class="search-tabs">
+          <button
+            class="tab-btn {% if search_type == 'company' %}active{% endif %}"
+            onclick="switchTab('company')"
+          >
+            🏢 Companies
+          </button>
+          <button
+            class="tab-btn {% if search_type == 'people' %}active{% endif %}"
+            onclick="switchTab('people')"
+          >
+            👥 People
+          </button>
+        </div>
+
+        <!-- Company Search Form -->
+        <div
+          id="company-form"
+          style="display: {% if search_type == 'company' %}block{% else %}none{% endif %}"
+        >
+          <form
+            method="POST"
+            action="{% url 'linkedin_automation:search_companies' %}"
+            class="search-form"
+          >
+            {% csrf_token %}
+            <input
+              type="text"
+              name="query"
+              class="search-input"
+              placeholder="Enter company name or keywords (e.g., 'Microsoft', 'AI startup')"
+              value="{{ query }}"
+              required
+            />
+            <button type="submit" class="search-btn">
+              🔍 Search Companies
+            </button>
+          </form>
+        </div>
+
+        <!-- People Search Form -->
+        <div
+          id="people-form"
+          style="display: {% if search_type == 'people' %}block{% else %}none{% endif %}"
+        >
+          <form
+            method="POST"
+            action="{% url 'linkedin_automation:search_people' %}"
+            class="search-form"
+            style="flex-direction: column; gap: 15px"
+          >
+            {% csrf_token %}
+            <div style="display: flex; gap: 15px">
+              <input
+                type="text"
+                name="query"
+                class="search-input"
+                placeholder="Enter person's name or keywords (e.g., 'John Smith', 'Data Scientist')"
+                value="{{ query }}"
+                required
+              />
+            </div>
+            <div style="display: flex; gap: 15px">
+              <select name="role" class="search-input" style="flex: 1">
+                <option value="">🎯 All Roles</option>
+                <option value="CEO" {% if role == "CEO" %}selected{% endif %}>
+                  CEO
+                </option>
+                <option
+                  value== "Founder"
+                  {%
+                  if
+                  role
+                  == "Founder"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Founder
+                </option>
+                <option
+                  value="Co-Founder"
+                  {%
+                  if
+                  role
+                  ="Co-Founder"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Co-Founder
+                </option>
+                <option
+                  value="Owner"
+                  {%
+                  if
+                  role
+                  ="Owner"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Owner
+                </option>
+                <option
+                  value="President"
+                  {%
+                  if
+                  role
+                  ="President"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  President
+                </option>
+                <option value== "CTO" {% if role == "CTO" %}selected{% endif %}>
+                  CTO - Chief Technology Officer
+                </option>
+                <option value== "CFO" {% if role == "CFO" %}selected{% endif %}>
+                  CFO - Chief Financial Officer
+                </option>
+                <option value== "COO" {% if role == "COO" %}selected{% endif %}>
+                  COO - Chief Operating Officer
+                </option>
+                <option value== "CMO" {% if role == "CMO" %}selected{% endif %}>
+                  CMO - Chief Marketing Officer
+                </option>
+                <option value== "VP" {% if role == "VP" %}selected{% endif %}>
+                  VP - Vice President
+                </option>
+                <option
+                  value="Director"
+                  {%
+                  if
+                  role
+                  ="Director"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Director
+                </option>
+                <option
+                  value="Manager"
+                  {%
+                  if
+                  role
+                  ="Manager"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Manager
+                </option>
+                <option
+                  value="Engineer"
+                  {%
+                  if
+                  role
+                  ="Engineer"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Engineer
+                </option>
+                <option
+                  value="Developer"
+                  {%
+                  if
+                  role
+                  ="Developer"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Developer
+                </option>
+                <option
+                  value="Designer"
+                  {%
+                  if
+                  role
+                  ="Designer"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Designer
+                </option>
+                <option
+                  value="Analyst"
+                  {%
+                  if
+                  role
+                  ="Analyst"
+                  %}selected{%
+                  endif
+                  %}
+                >
+                  Analyst
+                </option>
+              </select>
+              <input
+                type="text"
+                name="location"
+                class="search-input"
+                placeholder="📍 Location (e.g., 'San Francisco', 'New York', 'Remote')"
+                value="{{ location }}"
+                style="flex: 1"
+              />
+            </div>
+            <button type="submit" class="search-btn" style="width: 100%">
+              🔍 Search People
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Section -->
+      {% if searched %}
+      <div class="results-section">
+        <!-- Company Results -->
+        {% if companies %}
+        <div class="results-header">
+          <h2>🏢 Company Results</h2>
+          <span class="results-count"
+            >{{ companies|length }} companies found</span
+          >
+        </div>
+        <div class="results-grid">
+          {% for company in companies %}
+          <div class="result-card">
+            <div class="card-header">
+              {% if company.logo %}
+              <img
+                src="{{ company.logo }}"
+                alt="{{ company.name }}"
+                class="card-logo"
+              />
+              {% else %}
+              <div
+                class="card-logo"
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 24px;
+                "
+              >
+                🏢
+              </div>
+              {% endif %}
+              <div class="card-title">
+                <h3>{{ company.name }}</h3>
+                <p class="card-subtitle">{{ company.industry }}</p>
+              </div>
+            </div>
+            <div class="card-body">
+              {{ company.description|truncatewords:30 }}
+            </div>
+            <div class="card-meta">
+              {% if company.followerCount %}
+              <span class="meta-badge"
+                >👥 {{ company.followerCount|default:"0" }} followers</span
+              >
+              {% endif %} {% if company.employeeCount %}
+              <span class="meta-badge secondary"
+                >💼 {{ company.employeeCount|default:"0" }} employees</span
+              >
+              {% endif %} {% if company.website and company.website != 'N/A' %}
+              <a
+                href="{{ company.website }}"
+                target="_blank"
+                class="meta-badge tertiary"
+                style="text-decoration: none"
+                >🌐 Website</a
+              >
+              {% endif %}
+            </div>
+            <button
+              class="btn-save"
+              data-type="company"
+              data-name="{{ company.name }}"
+              data-industry="{{ company.industry }}"
+              data-description="{{ company.description }}"
+              data-website="{{ company.website }}"
+              data-logo="{{ company.logo }}"
+              data-followercount="{{ company.followerCount }}"
+              data-employeecount="{{ company.employeeCount }}"
+              onclick="saveProfileFromButton(this)"
+            >
+              💾 Save Lead
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- People Results -->
+        {% if people %}
+        <div class="results-header">
+          <h2>👥 People Results</h2>
+          <span class="results-count">{{ people|length }} people found</span>
+        </div>
+        <div class="results-grid">
+          {% for person in people %}
+          <div class="result-card">
+            <div class="card-header">
+              {% if person.profilePicture %}
+              <img
+                src="{{ person.profilePicture }}"
+                alt="{{ person.firstName }} {{ person.lastName }}"
+                class="card-logo"
+                style="border-radius: 50%"
+              />
+              {% else %}
+              <div
+                class="card-logo"
+                style="
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  font-size: 24px;
+                  border-radius: 50%;
+                "
+              >
+                👤
+              </div>
+              {% endif %}
+              <div class="card-title">
+                <h3>{{ person.firstName }} {{ person.lastName }}</h3>
+                <p class="card-subtitle">{{ person.industry }}</p>
+              </div>
+            </div>
+            <div class="card-body">
+              <strong>{{ person.headline }}</strong>
+            </div>
+            <div class="card-meta">
+              {% if person.location and person.location != 'N/A' %}
+              <span class="meta-badge">📍 {{ person.location }}</span>
+              {% endif %} {% if person.publicIdentifier %}
+              <a
+                href="https://www.linkedin.com/in/{{ person.publicIdentifier }}"
+                target="_blank"
+                class="meta-badge tertiary"
+                style="text-decoration: none"
+                >🔗 View Profile</a
+              >
+              {% endif %}
+            </div>
+            <button
+              class="btn-save"
+              data-type="person"
+              data-firstname="{{ person.firstName }}"
+              data-lastname="{{ person.lastName }}"
+              data-headline="{{ person.headline }}"
+              data-location="{{ person.location }}"
+              data-industry="{{ person.industry }}"
+              data-profilepicture="{{ person.profilePicture }}"
+              data-publicidentifier="{{ person.publicIdentifier }}"
+              onclick="saveProfileFromButton(this)"
+            >
+              💾 Save Lead
+            </button>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Empty State -->
+        {% if not companies and not people %}
+        <div class="empty-state">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <h3>No results found</h3>
+          <p>Try adjusting your search terms or keywords</p>
+        </div>
+        {% endif %}
+      </div>
+      {% else %}
+      <!-- Initial State -->
+      <div class="results-section">
+        <div class="empty-state">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <h3>Start your search</h3>
+          <p>Enter a company name or person's name above to begin</p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    <script>
+      function switchTab(type) {
+        // Update tabs
+        document.querySelectorAll(".tab-btn").forEach((btn) => {
+          btn.classList.remove("active");
+        });
+        event.target.classList.add("active");
+
+        // Show/hide forms
+        if (type === "company") {
+          document.getElementById("company-form").style.display = "block";
+          document.getElementById("people-form").style.display = "none";
+        } else {
+          document.getElementById("company-form").style.display = "none";
+          document.getElementById("people-form").style.display = "block";
+        }
+      }
+
+      // Auto-hide messages after 5 seconds
+      setTimeout(() => {
+        const messages = document.querySelector(".messages");
+        if (messages) {
+          messages.style.transition = "opacity 0.5s";
+          messages.style.opacity = "0";
+          setTimeout(() => messages.remove(), 500);
+        }
+      }, 5000);
+
+      // Save profile function - new version using data attributes
+      function saveProfileFromButton(btn) {
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+
+        const type = btn.dataset.type;
+        let data = {};
+
+        // Build data object from data attributes
+        if (type === "company") {
+          data = {
+            name: btn.dataset.name || "",
+            industry: btn.dataset.industry || "",
+            description: btn.dataset.description || "",
+            website: btn.dataset.website || "",
+            logo: btn.dataset.logo || "",
+            followerCount: btn.dataset.followercount || "",
+            employeeCount: btn.dataset.employeecount || "",
+            linkedin_url: btn.dataset.website || "",
+          };
+        } else {
+          const publicId = btn.dataset.publicidentifier || "";
+          data = {
+            firstName: btn.dataset.firstname || "",
+            lastName: btn.dataset.lastname || "",
+            name:
+              (btn.dataset.firstname || "") +
+              " " +
+              (btn.dataset.lastname || ""),
+            headline: btn.dataset.headline || "",
+            location: btn.dataset.location || "",
+            industry: btn.dataset.industry || "",
+            profilePicture: btn.dataset.profilepicture || "",
+            publicIdentifier: publicId,
+            linkedin_url: publicId
+              ? `https://www.linkedin.com/in/${publicId}`
+              : "",
+          };
+        }
+
+        fetch('{% url 'linkedin_automation:save_profile' %}', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+          body: `profile_type=${type}&data=${encodeURIComponent(
+            JSON.stringify(data)
+          )}`,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              btn.textContent = "✓ Saved!";
+              btn.style.background = "#38a169";
+              setTimeout(() => {
+                btn.textContent = "💾 Save Lead";
+                btn.style.background = "";
+                btn.disabled = false;
+              }, 2000);
+            } else {
+              btn.textContent = "✗ Error";
+              btn.disabled = false;
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            btn.textContent = "✗ Error";
+            btn.disabled = false;
+          });
+      }
+
+      // Legacy save profile function (keeping for compatibility)
+      function saveProfile(type, data) {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = "Saving...";
+
+        // Prepare linkedin URL
+        let linkedinUrl = "";
+        if (type === "company") {
+          linkedinUrl = data.website || "";
+        } else {
+          linkedinUrl = data.publicIdentifier
+            ? `https://www.linkedin.com/in/${data.publicIdentifier}`
+            : "";
+        }
+
+        // Add linkedin_url to data
+        data.linkedin_url = linkedinUrl;
+
+        fetch('{% url 'linkedin_automation:save_profile' %}', {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+            "X-CSRFToken": "{{ csrf_token }}",
+          },
+          body: `profile_type=${type}&data=${encodeURIComponent(
+            JSON.stringify(data)
+          )}`,
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              btn.textContent = "✓ Saved!";
+              btn.style.background = "#38a169";
+              setTimeout(() => {
+                btn.textContent = "💾 Save Lead";
+                btn.style.background = "";
+                btn.disabled = false;
+              }, 2000);
+            } else {
+              btn.textContent = "✗ Error";
+              btn.disabled = false;
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            btn.textContent = "✗ Error";
+            btn.disabled = false;
+          });
+      }
+    </script>
+  </body>
+</html>

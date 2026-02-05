@@ -92,6 +92,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (e.target.matches('#manual-rfq-btn')) {
                     this.runManualRfq(this.currentRequestData);
                 }
+                if (e.target.matches('#retry-sourcing-btn')) {
+                    this.runRetrySourcing(this.currentRequestData);
+                }
                 if (e.target.matches('#approve-rfq-btn')) {
                     this.runRfqSend(this.currentRequestData);
                 }
@@ -301,6 +304,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 setTimeout(() => this.closeDrillDownModal(), 1500);
             } else {
                 this.addLog('❌ Error: Could not update the request status.');
+            }
+        },
+
+        async runRetrySourcing(request) {
+            if (!confirm('This will re-run the sourcing agent to find suppliers. Continue?')) {
+                return;
+            }
+            this.addLog('🔄 Restarting supplier sourcing agent...');
+            const response = await fetch(`/procurement/api/find-suppliers/${request.id}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': this.csrfToken
+                }
+            });
+            if (response.ok) {
+                this.addLog('✅ Agent started! Searching for suppliers...');
+                // Close modal and reopen to show agent-working state
+                setTimeout(() => {
+                    this.closeDrillDownModal();
+                }, 1000);
+            } else {
+                this.addLog('❌ Error: Could not start the sourcing agent.');
             }
         },
 
@@ -545,7 +570,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 actionButtonHtml = `<button id="approve-rfq-btn" class="w-full bg-green-600 hover:bg-green-500 text-white font-bold py-3 px-4 rounded-lg">Approve & Send Email RFQs</button>`;
             } else {
                 supplierListHtml = '<li class="text-slate-400">Agent found no suppliers. Manually contact suppliers and mark as sent.</li>';
-                actionButtonHtml = `<button id="manual-rfq-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg">Manually Mark as RFQ Sent</button>`;
+                actionButtonHtml = `
+                    <button id="retry-sourcing-btn" class="w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-3 px-4 rounded-lg mb-3">🔄 Retry Sourcing</button>
+                    <button id="manual-rfq-btn" class="w-full bg-sky-600 hover:bg-sky-500 text-white font-bold py-3 px-4 rounded-lg">Manually Mark as RFQ Sent</button>`;
             }
             
             const rfqSubject = `Request for Quotation - ${request.title} [REQ-${request.id}]`;

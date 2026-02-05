@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PDF to LinkedIn Post - Marketing Agent</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #333;
+        min-height: 100vh;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      header {
+        background: white;
+        padding: 25px 35px;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      h1 {
+        color: #0077b5;
+        font-size: 28px;
+        margin-bottom: 5px;
+      }
+
+      .subtitle {
+        color: #666;
+        font-size: 14px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 15px;
+      }
+
+      .nav-btn {
+        padding: 10px 20px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: transform 0.2s;
+      }
+
+      .nav-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .main-content {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      }
+
+      .section {
+        margin-bottom: 30px;
+      }
+
+      .section-title {
+        font-size: 20px;
+        color: #0077b5;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #f0f0f0;
+      }
+
+      .upload-area {
+        border: 3px dashed #667eea;
+        border-radius: 12px;
+        padding: 40px;
+        text-align: center;
+        background: #f8f9ff;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .upload-area:hover {
+        border-color: #764ba2;
+        background: #f0f2ff;
+      }
+
+      .upload-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+      }
+
+      .upload-text {
+        font-size: 16px;
+        color: #666;
+        margin-bottom: 10px;
+      }
+
+      .file-input {
+        display: none;
+      }
+
+      .btn {
+        padding: 12px 25px;
+        border: none;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        color: white;
+      }
+
+      .btn-success:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(56, 239, 125, 0.4);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #ff006e 0%, #ff5e88 100%);
+        color: white;
+      }
+
+      .btn-danger:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 0, 110, 0.4);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-top: 15px;
+      }
+
+      .metadata-card {
+        background: #f8f9ff;
+        border-radius: 8px;
+        padding: 15px;
+        margin-top: 15px;
+      }
+
+      .metadata-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0;
+        border-bottom: 1px solid #e0e0e0;
+      }
+
+      .metadata-item:last-child {
+        border-bottom: none;
+      }
+
+      .metadata-label {
+        font-weight: 600;
+        color: #666;
+      }
+
+      .metadata-value {
+        color: #333;
+      }
+
+      .preview-box {
+        background: #f8f9ff;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 15px;
+        max-height: 300px;
+        overflow-y: auto;
+        font-family: "Courier New", monospace;
+        font-size: 13px;
+        line-height: 1.6;
+        color: #333;
+        white-space: pre-wrap;
+      }
+
+      .post-content {
+        background: #ffffff;
+        border: 2px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 20px;
+        margin-top: 15px;
+        min-height: 200px;
+        font-size: 15px;
+        line-height: 1.8;
+        white-space: pre-wrap;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial, sans-serif;
+        resize: vertical;
+        width: 100%;
+      }
+
+      .post-content:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+      }
+
+      .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-top: 20px;
+      }
+
+      .alert {
+        padding: 15px 20px;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        animation: slideIn 0.3s ease;
+      }
+
+      .alert-success {
+        background: #d4edda;
+        color: #155724;
+        border-left: 4px solid #28a745;
+      }
+
+      .alert-error {
+        background: #f8d7da;
+        color: #721c24;
+        border-left: 4px solid #dc3545;
+      }
+
+      .loading {
+        display: none;
+        text-align: center;
+        padding: 20px;
+      }
+
+      .loading.active {
+        display: block;
+      }
+
+      .spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #667eea;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 10px;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .hidden {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <div>
+          <h1>📄 PDF to LinkedIn Post</h1>
+          <p class="subtitle">
+            Upload a PDF and generate engaging LinkedIn content
+          </p>
+        </div>
+        <div class="nav-links">
+          <a href="{% url 'linkedin_automation:dashboard' %}" class="nav-btn"
+            >🏠 Main Dashboard</a
+          >
+          <a
+            href="{% url 'linkedin_automation:combine_sources' %}"
+            class="nav-btn"
+            >🔗 Combine Sources</a
+          >
+          <a href="{% url 'linkedin_automation:finder' %}" class="nav-btn"
+            >🔍 Profile Finder</a
+          >
+          <a href="{% url 'linkedin_automation:history' %}" class="nav-btn"
+            >📜 History</a
+          >
+        </div>
+      </header>
+
+      <div class="main-content">
+        <!-- Upload Section -->
+        <div class="section">
+          <h2 class="section-title">📤 Step 1: Upload PDF</h2>
+          <div class="upload-area" id="uploadArea">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">
+              Click to upload or drag & drop your PDF file
+            </div>
+            <div style="font-size: 12px; color: #999; margin-top: 5px">
+              Maximum 50 pages will be processed
+            </div>
+          </div>
+          <input
+            type="file"
+            id="pdfFileInput"
+            class="file-input"
+            accept=".pdf"
+          />
+
+          <div id="metadata" class="hidden">
+            <div class="metadata-card">
+              <div class="metadata-item">
+                <span class="metadata-label">📁 File:</span>
+                <span class="metadata-value" id="fileName"></span>
+              </div>
+              <div class="metadata-item">
+                <span class="metadata-label">📄 Pages:</span>
+                <span class="metadata-value" id="pageCount"></span>
+              </div>
+              <div class="metadata-item">
+                <span class="metadata-label">📝 Characters:</span>
+                <span class="metadata-value" id="charCount"></span>
+              </div>
+            </div>
+            <div class="preview-box" id="contentPreview"></div>
+          </div>
+        </div>
+
+        <!-- Generate Section -->
+        <div class="section">
+          <h2 class="section-title">✨ Step 2: Choose Format & Generate</h2>
+
+          <!-- Format Selection -->
+          <div style="margin-bottom: 20px">
+            <label
+              style="
+                font-weight: 600;
+                color: #666;
+                display: block;
+                margin-bottom: 10px;
+              "
+              >📝 Content Format:</label
+            >
+            <div style="display: flex; gap: 15px">
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  cursor: pointer;
+                  padding: 10px 20px;
+                  border: 2px solid #667eea;
+                  border-radius: 8px;
+                  transition: all 0.3s;
+                "
+                onmouseover="this.style.background = '#f0f2ff'"
+                onmouseout="this.style.background = 'white'"
+              >
+                <input
+                  type="radio"
+                  name="format_style"
+                  value="paragraph"
+                  checked
+                  style="margin-right: 8px"
+                />
+                <span style="font-weight: 500">📄 Paragraph Style</span>
+              </label>
+              <label
+                style="
+                  display: flex;
+                  align-items: center;
+                  cursor: pointer;
+                  padding: 10px 20px;
+                  border: 2px solid #667eea;
+                  border-radius: 8px;
+                  transition: all 0.3s;
+                "
+                onmouseover="this.style.background = '#f0f2ff'"
+                onmouseout="this.style.background = 'white'"
+              >
+                <input
+                  type="radio"
+                  name="format_style"
+                  value="points"
+                  style="margin-right: 8px"
+                />
+                <span style="font-weight: 500">📌 Point-wise Style</span>
+              </label>
+            </div>
+          </div>
+
+          <button id="generateBtn" class="btn btn-success" disabled>
+            🎨 Generate Post Content
+          </button>
+
+          <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Generating your LinkedIn post...</p>
+          </div>
+
+          {% if generated_post %}
+          <textarea class="post-content" id="postContent">
+{{ generated_post }}</textarea
+          >
+          <div class="action-buttons">
+            <button onclick="copyToClipboard()" class="btn btn-primary">
+              📋 Copy to Clipboard
+            </button>
+            <a
+              href="{% url 'linkedin_automation:dashboard' %}"
+              class="btn btn-primary"
+              >➡️ Continue to Dashboard</a
+            >
+            <button
+              id="clearBtn2"
+              class="btn btn-danger"
+              onclick="clearPDFData()"
+            >
+              🔄 Clear & Upload New PDF
+            </button>
+          </div>
+          {% else %}
+          <textarea
+            class="post-content hidden"
+            id="postContent"
+            placeholder="Your generated post will appear here and you can edit it..."
+          ></textarea>
+          <div class="action-buttons hidden" id="actionButtons">
+            <button onclick="copyToClipboard()" class="btn btn-primary">
+              📋 Copy to Clipboard
+            </button>
+            <a
+              href="{% url 'linkedin_automation:dashboard' %}"
+              class="btn btn-primary"
+              >➡️ Continue to Dashboard</a
+            >
+            <button
+              id="clearBtn2Alt"
+              class="btn btn-danger"
+              onclick="clearPDFData()"
+            >
+              🔄 Clear & Upload New PDF
+            </button>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const uploadArea = document.getElementById("uploadArea");
+      const fileInput = document.getElementById("pdfFileInput");
+      const generateBtn = document.getElementById("generateBtn");
+      const loading = document.getElementById("loading");
+      const metadata = document.getElementById("metadata");
+      const postContent = document.getElementById("postContent");
+      const actionButtons = document.getElementById("actionButtons");
+
+      // Global clear function
+      function clearPDFData() {
+        // Reset file input
+        fileInput.value = "";
+
+        // Hide metadata and generated content
+        metadata.classList.add("hidden");
+        if (postContent) {
+          postContent.classList.add("hidden");
+          postContent.value = "";
+        }
+        if (actionButtons) {
+          actionButtons.classList.add("hidden");
+        }
+
+        // Reset upload area
+        uploadArea.style.opacity = "1";
+        uploadArea.style.border = "3px dashed #667eea";
+        uploadArea.innerHTML = `
+          <div class="upload-icon">📄</div>
+          <div class="upload-text">Click to upload or drag & drop your PDF file</div>
+          <div style="font-size: 12px; color: #999; margin-top: 5px">Maximum 50 pages will be processed</div>
+        `;
+
+        // Disable generate button
+        generateBtn.disabled = true;
+
+        // Clear session on server
+        fetch('{% url 'linkedin_automation:pdf_to_post' %}?clear=1', { method: "GET" })
+          .then(() => console.log("Session cleared"))
+          .catch((err) => console.error("Clear error:", err));
+      }
+
+      // Handle upload area click
+      uploadArea.addEventListener("click", () => fileInput.click());
+
+      // Handle file selection
+      fileInput.addEventListener("change", async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith(".pdf")) {
+          alert("Please upload a PDF file");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("pdf_file", file);
+
+        try {
+          uploadArea.style.opacity = "0.5";
+          const response = await fetch('{% url 'linkedin_automation:upload_pdf' %}', {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": "{{ csrf_token }}",
+            },
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            // Show metadata
+            document.getElementById("fileName").textContent =
+              data.metadata.filename;
+            document.getElementById(
+              "pageCount"
+            ).textContent = `${data.metadata.pages_processed} of ${data.metadata.total_pages}`;
+            document.getElementById("charCount").textContent =
+              data.metadata.char_count.toLocaleString();
+            document.getElementById("contentPreview").textContent =
+              data.preview;
+
+            metadata.classList.remove("hidden");
+            generateBtn.disabled = false;
+            uploadArea.style.border = "3px solid #38ef7d";
+            uploadArea.innerHTML =
+              '<div style="color: #38ef7d; font-size: 48px;">✓</div><div style="color: #38ef7d; font-weight: 600;">PDF Uploaded Successfully!</div>';
+          } else {
+            alert("Error: " + data.error);
+            uploadArea.style.opacity = "1";
+          }
+        } catch (error) {
+          alert("Upload failed: " + error.message);
+          uploadArea.style.opacity = "1";
+        }
+      });
+
+      // Handle generate button
+      generateBtn.addEventListener("click", async () => {
+        try {
+          generateBtn.disabled = true;
+          loading.classList.add("active");
+
+          // Safely handle classList operations
+          if (postContent) {
+            postContent.classList.add("hidden");
+          }
+          if (actionButtons) {
+            actionButtons.classList.add("hidden");
+          }
+
+          // Get selected format style
+          const formatStyle = document.querySelector(
+            'input[name="format_style"]:checked'
+          ).value;
+
+          const formData = new FormData();
+          formData.append("format_style", formatStyle);
+
+          const response = await fetch('{% url 'linkedin_automation:generate_post_from_pdf' %}', {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": "{{ csrf_token }}",
+            },
+            body: formData,
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            if (postContent) {
+              postContent.value = data.post_content;
+              postContent.classList.remove("hidden");
+            }
+            if (actionButtons) {
+              actionButtons.classList.remove("hidden");
+            }
+            // Re-enable generate button for regeneration
+            generateBtn.disabled = false;
+          } else {
+            alert("❌ Error: " + data.error);
+            generateBtn.disabled = false;
+          }
+        } catch (error) {
+          alert("❌ Generation failed: " + error.message);
+          generateBtn.disabled = false;
+        } finally {
+          loading.classList.remove("active");
+        }
+      });
+
+      // Copy to clipboard function
+      function copyToClipboard() {
+        const text = postContent.value;
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            alert("✓ Post copied to clipboard!");
+          })
+          .catch((err) => {
+            alert("Failed to copy: " + err);
+          });
+      }
+
+      // Drag and drop
+      uploadArea.addEventListener("dragover", (e) => {
+        e.preventDefault();
+        uploadArea.style.background = "#e8ebff";
+      });
+
+      uploadArea.addEventListener("dragleave", () => {
+        uploadArea.style.background = "#f8f9ff";
+      });
+
+      uploadArea.addEventListener("drop", (e) => {
+        e.preventDefault();
+        uploadArea.style.background = "#f8f9ff";
+
+        const file = e.dataTransfer.files[0];
+        if (file && file.name.endsWith(".pdf")) {
+          fileInput.files = e.dataTransfer.files;
+          fileInput.dispatchEvent(new Event("change"));
+        }
+      });
+    </script>
+  </body>
+</html>
