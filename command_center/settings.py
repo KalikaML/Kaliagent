@@ -34,6 +34,13 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 # ALLOWED_HOSTS: Read from environment variable or default to localhost for local dev
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '127.0.0.1,localhost').split(',')
 
+# CSRF_TRUSTED_ORIGINS: Read from environment variable for production
+csrf_origins_env = os.getenv('CSRF_TRUSTED_ORIGINS', '')
+if csrf_origins_env:
+    CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in csrf_origins_env.split(',')]
+else:
+    CSRF_TRUSTED_ORIGINS = []
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
