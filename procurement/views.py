@@ -145,11 +145,12 @@ def _run_single_scrape(request_id):
         try:
             # Truncate any previous log for a clean run
             with open(log_path, 'w', encoding='utf-8') as f:
-                f.write('')
-        except Exception:
-            pass
+                f.write(f'=== Agent started for request {request_id} ===\n')
+                f.flush()
+        except Exception as e:
+            print(f"[AGENT ERROR] Could not create log file at {log_path}: {e}")
 
-        command = [sys.executable, 'manage.py', 'scrape_suppliers', str(request_id)]
+        command = [sys.executable, '-u', 'manage.py', 'scrape_suppliers', str(request_id)]
         try:
             print(f"[AGENT] Starting supplier scrape for request {request_id}...")
             # Stream stdout+stderr into the log file as the command runs
@@ -159,16 +160,20 @@ def _run_single_scrape(request_id):
                     stdout=subprocess.PIPE,
                     stderr=subprocess.STDOUT,
                     text=True,
-                    bufsize=1
+                    bufsize=1,
+                    universal_newlines=True
                 )
                 for line in process.stdout:
                     try:
                         log_file.write(line)
                         # Flush so UI sees live logs while the agent runs
                         log_file.flush()
-                    except Exception:
-                        # best-effort logging; ignore write failures
-                        pass
+                        # Also print to console for debugging
+                        print(f"[LOG] {line.rstrip()}")
+                        sys.stdout.flush()
+                    except Exception as e:
+                        # best-effort logging; log write failures for debugging
+                        print(f"[LOG ERROR] Failed to write log line: {e}")
                 process.wait()
 
             if process.returncode == 0:
@@ -204,7 +209,7 @@ def start_bulk_processing_agent(request_id):
         req.save()
         
         def run_in_thread():
-            command = [sys.executable, 'manage.py', 'process_bulk_request', str(request_id)]
+            command = [sys.executable, '-u', 'manage.py', 'process_bulk_request', str(request_id)]
             subprocess.run(command)
             
         thread = threading.Thread(target=run_in_thread)

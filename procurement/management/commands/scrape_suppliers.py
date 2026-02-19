@@ -528,6 +528,8 @@ async def run_supplier_sourcing_agent(request_id):
                         print(f"      ❌ Error processing vendor '{name}': {e}")
         except Exception as e:
             print(f"❌ Error in Indiamart scraping phase: {e}")
+        
+        print(f"  📊 Indiamart phase complete: {len(all_found_suppliers_data)} suppliers collected so far.")
 
         # --- PHASE 2: Sourcing from Google Search ---
         print("\n--- AGENT PHASE 2: Sourcing from Google Search... ---")
@@ -565,6 +567,8 @@ async def run_supplier_sourcing_agent(request_id):
             except Exception as e_phase2:
                 print(f"❌ Error in Google sourcing phase: {e_phase2}")
                 break
+        
+        print(f"  📊 Google search phase complete: {len(all_found_suppliers_data)} suppliers collected so far.")
 
         # --- PHASE 2B: Target major Indian supplier portals directly if results are few ---
         ALT_PORTALS = [
@@ -605,19 +609,27 @@ async def run_supplier_sourcing_agent(request_id):
                             print(f"      ❌ Error processing URL '{website_url}': {e_visit}")
                 except Exception as e_portal:
                     print(f"   - ❌ Portal-targeted search failed for {portal}: {e_portal}")
+        
+        print(f"  📊 Portal search phase complete: {len(all_found_suppliers_data)} suppliers collected total.")
 
         await browser.close()
 
     # --- PHASE 3: Save Data to Database ---
-    print("\n--- AGENT PHASE 3: Saving suppliers... ---")
+    print(f"\n--- AGENT PHASE 3: Saving suppliers (found {len(all_found_suppliers_data)} total)... ---")
     try:
         saved_count = await save_suppliers_to_db(proc_request, all_found_suppliers_data)
-        print(f"✅ Saved {saved_count} new suppliers to the database.")
+        print(f"✅ Saved {saved_count} suppliers to database (out of {len(all_found_suppliers_data)} found).")
+        if saved_count == 0 and len(all_found_suppliers_data) > 0:
+            print("⚠️ WARNING: Suppliers were found but none were saved! Check contact info (email/phone).")
+        elif saved_count == 0:
+            print("⚠️ INFO: No suppliers found during scraping. Consider retry or manual sourcing.")
     except Exception as e:
         print(f"❌ Error saving suppliers to database: {e}")
+        import traceback
+        traceback.print_exc()
     finally:
         await set_request_status(proc_request, 'awaiting-approval')
-        print(f"\nAgent finished for request {request_id}. Status set to 'Awaiting Approval'.")
+        print(f"\n✅ Agent finished for request {request_id}. Status set to 'Awaiting Approval'.")
 
 class Command(BaseCommand):
     help = 'Runs the supplier sourcing agent, now with automatic specification scraping.'
