@@ -142,6 +142,8 @@ if os.getenv('USE_GCS', 'False') == 'True':
     GS_BUCKET_NAME = os.getenv('GCS_BUCKET_NAME', 'kaliagents-media')
     GS_PROJECT_ID = os.getenv('GCP_PROJECT_ID')
     GS_CREDENTIALS = None  # Uses default credentials in Cloud Run
+    GS_QUERYSTRING_AUTH = False  # Use public URLs, no signed URLs (bucket is public)
+    GS_DEFAULT_ACL = 'publicRead'  # Make uploaded files publicly readable
     MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Define for compatibility
     
