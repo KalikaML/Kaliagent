@@ -410,13 +410,24 @@ def set_request_status(proc_request: ProcurementRequest, status: str):
 
 # --- Main Sourcing Agent Logic ---
 async def run_supplier_sourcing_agent(request_id):
+    print(f"[INIT] Starting agent for request {request_id}...", flush=True)
+    
     proc_request = await get_procurement_request(request_id)
     if not proc_request:
-        print(f"Error: ProcurementRequest with ID {request_id} not found.")
+        print(f"Error: ProcurementRequest with ID {request_id} not found.", flush=True)
         return
 
     product_name = proc_request.product.name if proc_request.product else proc_request.title
-    print(f"🚀 Sourcing started: '{product_name}'")
+    print(f"🚀 Sourcing started: '{product_name}'", flush=True)
+    
+    # Test Playwright availability
+    try:
+        print("[CHECK] Testing Playwright availability...", flush=True)
+        import subprocess
+        result = subprocess.run(['playwright', '--version'], capture_output=True, text=True, timeout=5)
+        print(f"[CHECK] Playwright version: {result.stdout.strip()}", flush=True)
+    except Exception as e:
+        print(f"⚠️ WARNING: Playwright check failed: {e}", flush=True)
 
     scraped_domains = set()
     all_found_suppliers_data = []
@@ -436,164 +447,127 @@ async def run_supplier_sourcing_agent(request_id):
             from django.conf import settings as _s
             print(f"\n--- AGENT PHASE 0: No historical suppliers found for '{product_name}'. CSV path: {_s.PREVIOUS_SUPPLIERS_CSV} ---")
     except Exception as e:
-        print(f"   ❌ Error loading historical suppliers: {e}")
+        print(f"   ❌ Error loading historical suppliers: {e}", flush=True)
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=True)
-        context = await browser.new_context(
-            user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
-        )
-        page = await context.new_page()
-        page.set_default_navigation_timeout(60000)
+    print("[INIT] Launching Playwright browser...", flush=True)
+    try:
+        async with async_playwright() as p:
+            print("[INIT] Playwright context created, launching Chromium...", flush=True)
+            browser = await p.chromium.launch(headless=True)
+            print(f"[INIT] Browser launched successfully", flush=True)
+            context = await browser.new_context(
+                user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36'
+            )
+            page = await context.new_page()
+            page.set_default_navigation_timeout(60000)
+            print("[INIT] Browser page ready", flush=True)
 
-        # --- PHASE 1: Sourcing from Indiamart ---
-        print("\n--- AGENT PHASE 1: Scrape Specs & Find Suppliers from Indiamart ---")
-        try:
-            search_query_im = quote_plus(product_name)
-            indiamart_search_url = f"https://dir.indiamart.com/search.mp?ss={search_query_im}"
-            await page.goto(indiamart_search_url, wait_until="load", timeout=60000)
-            
-            # 🔄 MODIFIED: New logic block to find and scrape product specifications first
-            print("  -> Attempting to find and scrape product specifications...")
+            # --- PHASE 1: Sourcing from Indiamart ---
+            print("\n--- AGENT PHASE 1: Scrape Specs & Find Suppliers from Indiamart ---")
             try:
-                # Find the first product link on the search results page
-                first_product_link_selector = 'a.prd-name'
-                first_product_link = page.locator(first_product_link_selector).first
+                search_query_im = quote_plus(product_name)
+                indiamart_search_url = f"https://dir.indiamart.com/search.mp?ss={search_query_im}"
+                await page.goto(indiamart_search_url, wait_until="load", timeout=60000)
                 
-                if await first_product_link.is_visible(timeout=10000):
-                    product_href = await first_product_link.get_attribute('href')
-                    if product_href:
-                        product_url = urljoin(indiamart_search_url, product_href)
-                        print(f"    - Navigating to first product page: {product_url}")
-                        await page.goto(product_url, wait_until="domcontentloaded")
-                        
-                        # Scrape specifications from the product detail page
-                        scraped_specs = await scrape_product_specifications(page)
-                        
-                        if scraped_specs:
-                            # Save the scraped specs to the database
-                            await update_request_specs(proc_request, scraped_specs)
-                        
-                        # IMPORTANT: Go back to the search results page to find suppliers
-                        print("    - Navigating back to search results page.")
-                        await page.go_back(wait_until="domcontentloaded")
-                else:
-                    print("    - Could not find a product link to scrape for specs.")
-            except Exception as e_specs:
-                print(f"    - ❌ Error during specification scraping phase: {e_specs}")
-                # Ensure we are back on the search page if an error occurred
-                if page.url != indiamart_search_url:
-                    await page.goto(indiamart_search_url, wait_until="load", timeout=60000)
-
-            # Now, continue to find supplier names from the search results page
-            soup = BeautifulSoup(await page.content(), 'html.parser')
-            vendor_links = soup.select('a.prd-name') 
-            vendor_names = {link.get_text(strip=True) for link in vendor_links if link.get_text(strip=True)}
-            
-            if vendor_names:
-                print(f"  -> Found {len(vendor_names)} potential vendors on Indiamart. Finding their official sites...")
-                for name in list(vendor_names)[:10]:
-                    try:
-                        search_query = f'"{name}" official website contact'
-                        results = []
-                        try:
-                            print(f"   - Trying SerpApi for '{name}'...")
-                            search = GoogleSearch({"q": search_query, "api_key": settings.SERPAPI_API_KEY})
-                            results = search.get_dict().get("organic_results", [])
-                            if not results: raise ValueError("No results from SerpApi.")
-                        except Exception as e:
-                            print(f"   - SerpApi failed ({e}). Fallback to SearXNG.")
-                            results = search_with_searxng(search_query)
-
-                        if not results or not results[0].get("link"): continue
-                        
-                        website_url = results[0].get("link")
-                        domain = urlparse(website_url).netloc.replace("www.", "")
-                        if domain in scraped_domains or any(m in domain for m in MARKETPLACE_DOMAINS): continue
-                        
-                        scraped_domains.add(domain)
-                        print(f"    - Visiting: {name} ({website_url})")
-                        await page.goto(website_url, wait_until="domcontentloaded")
-                        details = await find_contact_info(page)
-                        page_text = html_to_text(await page.content())
-                        relevance = compute_relevance(product_keywords, name, page_text, domain, details.get('email'))
-                        if any(details.values()) and relevance >= MIN_RELEVANCE_SCORE:
-                            all_found_suppliers_data.append({'name': name, **details, 'source_link': website_url, 'provenance': 'scraped'})
-                            print(f"      ✅ Relevant: Email - {details['email']}, Phone - {details['phone']} (score={relevance})")
-                        else:
-                            print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
-                    except PlaywrightTimeoutError:
-                        print(f"      ❌ Timeout while processing vendor '{name}'. Skipping.")
-                    except Exception as e:
-                        print(f"      ❌ Error processing vendor '{name}': {e}")
-        except Exception as e:
-            print(f"❌ Error in Indiamart scraping phase: {e}")
-        
-        print(f"  📊 Indiamart phase complete: {len(all_found_suppliers_data)} suppliers collected so far.")
-
-        # --- PHASE 2: Sourcing from Google Search ---
-        print("\n--- AGENT PHASE 2: Sourcing from Google Search... ---")
-        for start_index in range(0, 20, 10):
-            try:
-                print(f"  -> Searching Google page {start_index//10 + 1}...")
-                search_query = f'"{product_name}" suppliers manufacturers India contact email'
-                results = unified_web_search(search_query, num_results=10, start_index=start_index)
-                
-                if not results: break
-
-                for result in results:
-                    try:
-                        website_url = result.get("url") or result.get("link")
-                        if not website_url: continue
-                        domain = urlparse(website_url).netloc.replace("www.", "")
-                        if domain in scraped_domains or any(m in domain for m in MARKETPLACE_DOMAINS) or any(u in domain for u in UNDESIRED_DOMAINS): continue
-                        
-                        scraped_domains.add(domain)
-                        name = result.get("title")
-                        print(f"    - Visiting: {name} ({website_url})")
-                        await page.goto(website_url, wait_until="domcontentloaded")
-                        details = await find_contact_info(page)
-                        page_text = html_to_text(await page.content())
-                        relevance = compute_relevance(product_keywords, name, page_text, domain, details.get('email'))
-                        if any(details.values()) and relevance >= MIN_RELEVANCE_SCORE:
-                            all_found_suppliers_data.append({'name': name, **details, 'source_link': website_url, 'provenance': 'scraped'})
-                            print(f"      ✅ Relevant: Email - {details['email']}, Phone - {details['phone']} (score={relevance})")
-                        else:
-                            print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
-                    except PlaywrightTimeoutError:
-                        print(f"      ❌ Timeout while processing URL '{website_url}'. Skipping.")
-                    except Exception as e:
-                        print(f"      ❌ Error processing URL '{website_url}': {e}")
-            except Exception as e_phase2:
-                print(f"❌ Error in Google sourcing phase: {e_phase2}")
-                break
-        
-        print(f"  📊 Google search phase complete: {len(all_found_suppliers_data)} suppliers collected so far.")
-
-        # --- PHASE 2B: Target major Indian supplier portals directly if results are few ---
-        ALT_PORTALS = [
-            'site:tradeindia.com',
-            'site:alibaba.com',
-            'site:justdial.com',
-            'site:ofbusiness.com',
-        ]
-        if len(all_found_suppliers_data) < 5:
-            print("\n--- AGENT PHASE 2B: Targeted portal searches (TradeIndia, Alibaba, Justdial, OfBusiness)... ---")
-            for portal in ALT_PORTALS:
+                # 🔄 OPTIONAL: Try to scrape product specifications if available (non-blocking)
+                print("  -> Attempting to find and scrape product specifications (optional)...")
                 try:
-                    q = f'"{product_name}" suppliers manufacturers India contact email {portal}'
-                    results = unified_web_search(q, num_results=10, start_index=0)
-                    for r in results:
-                        website_url = r.get('url') or r.get('link') or ''
-                        if not website_url:
-                            continue
-                        domain = urlparse(website_url).netloc.replace('www.', '')
-                        if domain in scraped_domains or any(u in domain for u in UNDESIRED_DOMAINS):
-                            continue
-                        scraped_domains.add(domain)
-                        name = r.get('title')
-                        print(f"    - Visiting: {name} ({website_url})")
+                    # Find the first product link on the search results page
+                    first_product_link_selector = 'a.prd-name'
+                    first_product_link = page.locator(first_product_link_selector).first
+                    
+                    if await first_product_link.is_visible(timeout=10000):
+                        product_href = await first_product_link.get_attribute('href')
+                        if product_href:
+                            product_url = urljoin(indiamart_search_url, product_href)
+                            print(f"    - Navigating to first product page: {product_url}")
+                            await page.goto(product_url, wait_until="domcontentloaded")
+                            
+                            # Scrape specifications from the product detail page
+                            scraped_specs = await scrape_product_specifications(page)
+                            
+                            if scraped_specs:
+                                # Save the scraped specs to the database
+                                await update_request_specs(proc_request, scraped_specs)
+                            
+                            # IMPORTANT: Go back to the search results page to find suppliers
+                            print("    - Navigating back to search results page.")
+                            await page.go_back(wait_until="domcontentloaded")
+                    else:
+                        print("    - No product link found for specification scraping (skipping, will continue with suppliers).")
+                except Exception as e_specs:
+                    print(f"    - ⚠️ Specification scraping failed (optional feature): {e_specs}")
+                    print("    - Continuing with supplier search...")
+                    # Ensure we are back on the search page if an error occurred
+                    if page.url != indiamart_search_url:
+                        await page.goto(indiamart_search_url, wait_until="load", timeout=60000)
+
+                # Now, continue to find supplier names from the search results page
+                soup = BeautifulSoup(await page.content(), 'html.parser')
+                vendor_links = soup.select('a.prd-name') 
+                vendor_names = {link.get_text(strip=True) for link in vendor_links if link.get_text(strip=True)}
+                
+                if vendor_names:
+                    print(f"  -> Found {len(vendor_names)} potential vendors on Indiamart. Finding their official sites...")
+                    for name in list(vendor_names)[:10]:
                         try:
+                            search_query = f'"{name}" official website contact'
+                            results = []
+                            try:
+                                print(f"   - Trying SerpApi for '{name}'...")
+                                search = GoogleSearch({"q": search_query, "api_key": settings.SERPAPI_API_KEY})
+                                results = search.get_dict().get("organic_results", [])
+                                if not results: raise ValueError("No results from SerpApi.")
+                            except Exception as e:
+                                print(f"   - SerpApi failed ({e}). Fallback to SearXNG.")
+                                results = search_with_searxng(search_query)
+
+                            if not results or not results[0].get("link"): continue
+                            
+                            website_url = results[0].get("link")
+                            domain = urlparse(website_url).netloc.replace("www.", "")
+                            if domain in scraped_domains or any(m in domain for m in MARKETPLACE_DOMAINS): continue
+                            
+                            scraped_domains.add(domain)
+                            print(f"    - Visiting: {name} ({website_url})")
+                            await page.goto(website_url, wait_until="domcontentloaded")
+                            details = await find_contact_info(page)
+                            page_text = html_to_text(await page.content())
+                            relevance = compute_relevance(product_keywords, name, page_text, domain, details.get('email'))
+                            if any(details.values()) and relevance >= MIN_RELEVANCE_SCORE:
+                                all_found_suppliers_data.append({'name': name, **details, 'source_link': website_url, 'provenance': 'scraped'})
+                                print(f"      ✅ Relevant: Email - {details['email']}, Phone - {details['phone']} (score={relevance})")
+                            else:
+                                print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
+                        except PlaywrightTimeoutError:
+                            print(f"      ❌ Timeout while processing vendor '{name}'. Skipping.")
+                        except Exception as e:
+                            print(f"      ❌ Error processing vendor '{name}': {e}")
+            except Exception as e:
+                print(f"❌ Error in Indiamart scraping phase: {e}")
+            
+            print(f"  📊 Indiamart phase complete: {len(all_found_suppliers_data)} suppliers collected so far.")
+
+            # --- PHASE 2: Sourcing from Google Search ---
+            print("\n--- AGENT PHASE 2: Sourcing from Google Search... ---")
+            for start_index in range(0, 20, 10):
+                try:
+                    print(f"  -> Searching Google page {start_index//10 + 1}...")
+                    search_query = f'"{product_name}" suppliers manufacturers India contact email'
+                    results = unified_web_search(search_query, num_results=10, start_index=start_index)
+                    
+                    if not results: break
+
+                    for result in results:
+                        try:
+                            website_url = result.get("url") or result.get("link")
+                            if not website_url: continue
+                            domain = urlparse(website_url).netloc.replace("www.", "")
+                            if domain in scraped_domains or any(m in domain for m in MARKETPLACE_DOMAINS) or any(u in domain for u in UNDESIRED_DOMAINS): continue
+                            
+                            scraped_domains.add(domain)
+                            name = result.get("title")
+                            print(f"   - Visiting: {name} ({website_url})")
                             await page.goto(website_url, wait_until="domcontentloaded")
                             details = await find_contact_info(page)
                             page_text = html_to_text(await page.content())
@@ -605,31 +579,80 @@ async def run_supplier_sourcing_agent(request_id):
                                 print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
                         except PlaywrightTimeoutError:
                             print(f"      ❌ Timeout while processing URL '{website_url}'. Skipping.")
-                        except Exception as e_visit:
-                            print(f"      ❌ Error processing URL '{website_url}': {e_visit}")
-                except Exception as e_portal:
-                    print(f"   - ❌ Portal-targeted search failed for {portal}: {e_portal}")
-        
-        print(f"  📊 Portal search phase complete: {len(all_found_suppliers_data)} suppliers collected total.")
+                        except Exception as e:
+                            print(f"      ❌ Error processing URL '{website_url}': {e}")
+                except Exception as e_phase2:
+                    print(f"❌ Error in Google sourcing phase: {e_phase2}")
+                    break
+            
+            print(f"  📊 Google search phase complete: {len(all_found_suppliers_data)} suppliers collected so far.")
 
-        await browser.close()
+            # --- PHASE 2B: Target major Indian supplier portals directly if results are few ---
+            ALT_PORTALS = [
+                'site:tradeindia.com',
+                'site:alibaba.com',
+                'site:justdial.com',
+                'site:ofbusiness.com',
+            ]
+            if len(all_found_suppliers_data) < 5:
+                print("\n--- AGENT PHASE 2B: Targeted portal searches (TradeIndia, Alibaba, Justdial, OfBusiness)... ---")
+                for portal in ALT_PORTALS:
+                    try:
+                        q = f'"{product_name}" suppliers manufacturers India contact email {portal}'
+                        results = unified_web_search(q, num_results=10, start_index=0)
+                        for r in results:
+                            website_url = r.get('url') or r.get('link') or ''
+                            if not website_url:
+                                continue
+                            domain = urlparse(website_url).netloc.replace('www.', '')
+                            if domain in scraped_domains or any(u in domain for u in UNDESIRED_DOMAINS):
+                                continue
+                            scraped_domains.add(domain)
+                            name = r.get('title')
+                            print(f"    - Visiting: {name} ({website_url})")
+                            try:
+                                await page.goto(website_url, wait_until="domcontentloaded")
+                                details = await find_contact_info(page)
+                                page_text = html_to_text(await page.content())
+                                relevance = compute_relevance(product_keywords, name, page_text, domain, details.get('email'))
+                                if any(details.values()) and relevance >= MIN_RELEVANCE_SCORE:
+                                    all_found_suppliers_data.append({'name': name, **details, 'source_link': website_url, 'provenance': 'scraped'})
+                                    print(f"      ✅ Relevant: Email - {details['email']}, Phone - {details['phone']} (score={relevance})")
+                                else:
+                                    print(f"      ⚠️ Skipped low-relevance supplier '{name}' (score={relevance}).")
+                            except PlaywrightTimeoutError:
+                                print(f"      ❌ Timeout while processing URL '{website_url}'. Skipping.")
+                            except Exception as e_visit:
+                                print(f"      ❌ Error processing URL '{website_url}': {e_visit}")
+                    except Exception as e_portal:
+                        print(f"   - ❌ Portal-targeted search failed for {portal}: {e_portal}")
+            
+                print(f"  📊 Portal search phase complete: {len(all_found_suppliers_data)} suppliers collected total.")
 
+            await browser.close()
+            print("[CLEANUP] Browser closed successfully", flush=True)
+    except Exception as playwright_error:
+        print(f"❌ PLAYWRIGHT ERROR: {playwright_error}", flush=True)
+        import traceback
+        traceback.print_exc()
+        print(f"[ERROR] Playwright failed, proceeding with any suppliers found so far: {len(all_found_suppliers_data)}", flush=True)
+    
     # --- PHASE 3: Save Data to Database ---
-    print(f"\n--- AGENT PHASE 3: Saving suppliers (found {len(all_found_suppliers_data)} total)... ---")
+    print(f"\n--- AGENT PHASE 3: Saving suppliers (found {len(all_found_suppliers_data)} total)... ---", flush=True)
     try:
         saved_count = await save_suppliers_to_db(proc_request, all_found_suppliers_data)
-        print(f"✅ Saved {saved_count} suppliers to database (out of {len(all_found_suppliers_data)} found).")
+        print(f"✅ Saved {saved_count} suppliers to database (out of {len(all_found_suppliers_data)} found).", flush=True)
         if saved_count == 0 and len(all_found_suppliers_data) > 0:
-            print("⚠️ WARNING: Suppliers were found but none were saved! Check contact info (email/phone).")
+            print("⚠️ WARNING: Suppliers were found but none were saved! Check contact info (email/phone).", flush=True)
         elif saved_count == 0:
-            print("⚠️ INFO: No suppliers found during scraping. Consider retry or manual sourcing.")
+            print("⚠️ INFO: No suppliers found during scraping. Consider retry or manual sourcing.", flush=True)
     except Exception as e:
-        print(f"❌ Error saving suppliers to database: {e}")
+        print(f"❌ Error saving suppliers to database: {e}", flush=True)
         import traceback
         traceback.print_exc()
     finally:
         await set_request_status(proc_request, 'awaiting-approval')
-        print(f"\n✅ Agent finished for request {request_id}. Status set to 'Awaiting Approval'.")
+        print(f"\n✅ Agent finished for request {request_id}. Status set to 'Awaiting Approval'.", flush=True)
 
 class Command(BaseCommand):
     help = 'Runs the supplier sourcing agent, now with automatic specification scraping.'
@@ -638,5 +661,20 @@ class Command(BaseCommand):
         parser.add_argument('request_id', type=int, help='The ID of the ProcurementRequest to process')
     
     def handle(self, *args, **options):
+        import sys
         request_id = options['request_id']
-        asyncio.run(run_supplier_sourcing_agent(request_id))
+        print(f"=" * 80, flush=True)
+        print(f"SCRAPE_SUPPLIERS COMMAND STARTED - Request ID: {request_id}", flush=True)
+        print(f"Python: {sys.executable}", flush=True)
+        print(f"Working directory: {os.getcwd()}", flush=True)
+        print(f"=" * 80, flush=True)
+        sys.stdout.flush()
+        
+        try:
+            asyncio.run(run_supplier_sourcing_agent(request_id))
+        except Exception as e:
+            print(f"FATAL ERROR in scrape_suppliers: {e}", flush=True)
+            import traceback
+            traceback.print_exc()
+            sys.stdout.flush()
+            raise
