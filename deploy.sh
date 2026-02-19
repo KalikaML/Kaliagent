@@ -62,7 +62,11 @@ gcloud iam service-accounts create "$SA_NAME" \
 SA_EMAIL="${SA_NAME}@${PROJECT_ID}.iam.gserviceaccount.com"
 echo "Service account: $SA_EMAIL"
 
-# 5. Ensure secrets exist in Secret Manager
+# 5. Grant service account access to GCS bucket
+echo "Granting GCS bucket access to service account..."
+gsutil iam ch serviceAccount:${SA_EMAIL}:objectAdmin gs://kaliagents-media || true
+
+# 6. Ensure secrets exist in Secret Manager
 REQUIRED_SECRETS=(
   SECRET_KEY
   DB_NAME
@@ -91,6 +95,8 @@ REQUIRED_SECRETS=(
   LINKEDIN_PERSON_URN
   GOOGLE_SHEETS_CREDENTIALS_JSON
   SUPPLIERS_CSV_DATA
+  ALLOWED_HOSTS
+  CSRF_TRUSTED_ORIGINS
 )
 
 echo "Checking & updating secrets..."
@@ -122,7 +128,7 @@ for s in "${REQUIRED_SECRETS[@]}"; do
     >/dev/null 2>&1 || true
 done
 
-# 6. Deploy to Cloud Run (connects to Neon DB)
+# 7. Deploy to Cloud Run (connects to Neon DB)
 echo "Deploying to Cloud Run..."
 gcloud run deploy "$SERVICE_NAME" \
   --image "$IMAGE" \
@@ -156,8 +162,10 @@ GIPHY_API_KEY=GIPHY_API_KEY:latest,\
 LINKEDIN_ACCESS_TOKEN=LINKEDIN_ACCESS_TOKEN:latest,\
 LINKEDIN_PERSON_URN=LINKEDIN_PERSON_URN:latest,\
 GOOGLE_SHEETS_CREDENTIALS_JSON=GOOGLE_SHEETS_CREDENTIALS_JSON:latest,\
-SUPPLIERS_CSV_DATA=SUPPLIERS_CSV_DATA:latest" \
-  --set-env-vars="DJANGO_SETTINGS_MODULE=command_center.settings,DEBUG=False,ALLOWED_HOSTS=command-center-uat-6ys7pejqpq-uc.a.run.app,USE_GCS=True,GCS_BUCKET_NAME=kaliagents-media,GCP_PROJECT_ID=$PROJECT_ID" \
+SUPPLIERS_CSV_DATA=SUPPLIERS_CSV_DATA:latest,\
+ALLOWED_HOSTS=ALLOWED_HOSTS:latest,\
+CSRF_TRUSTED_ORIGINS=CSRF_TRUSTED_ORIGINS:latest" \
+  --set-env-vars="DJANGO_SETTINGS_MODULE=command_center.settings,DEBUG=False,USE_GCS=True,GCS_BUCKET_NAME=kaliagents-media,GCP_PROJECT_ID=$PROJECT_ID" \
   --min-instances=1 \
   --max-instances=1 \
   --cpu-boost \
