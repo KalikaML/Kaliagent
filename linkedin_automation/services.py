@@ -588,6 +588,9 @@ class LinkedInService:
                 }
             }
             
+            print(f"🔍 DEBUG: Person URN being used: {self.person_urn}")
+            print(f"🔍 DEBUG: Payload: {payload}")
+            
             response = requests.post(url, json=payload, headers=self.headers)
             
             # Detailed error handling

@@ -112,18 +112,40 @@ USE_I18N = True
 USE_TZ = True
 
 STATIC_URL = '/static/'
-#STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+# Django automatically collects from each installed app's static/ folder
+# Only list directories here that are NOT inside installed apps
 STATICFILES_DIRS = [
-    #BASE_DIR, 'static',
-    BASE_DIR / 'procurement' / 'static',]
-#STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static'), os.path.join(BASE_DIR, 'procurement', 'static')]
+    BASE_DIR / 'static',  # For global/shared static files
+]
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
+# --- MEDIA FILES CONFIGURATION ---IN DEVELOPMENT MODE, MEDIA_URL is /media/ and files are stored locally in BASE_DIR/media/
 # Media files configuration
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+#MEDIA_URL = '/media/'
+#MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Ensure media directories exist
+#os.makedirs(os.path.join(MEDIA_ROOT, 'uploads'), exist_ok=True)
+
+# Use Google Cloud Storage in production, local filesystem in development
+if os.getenv('USE_GCS', 'False') == 'True':
+    # Production: Google Cloud Storage
+    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
+    GS_BUCKET_NAME = os.getenv('GCS_BUCKET_NAME', 'kaliagents-media')
+    GS_PROJECT_ID = os.getenv('GCP_PROJECT_ID')
+    GS_CREDENTIALS = None  # Uses default credentials in Cloud Run
+    MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
+    print(f"📦 Using Google Cloud Storage: {GS_BUCKET_NAME}")
+else:
+    # Development: Local filesystem
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    # Ensure media directories exist
+    os.makedirs(os.path.join(MEDIA_ROOT, 'uploads'), exist_ok=True)
+    print(f"📁 Using local media storage: {MEDIA_ROOT}")
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

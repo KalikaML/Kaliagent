@@ -234,12 +234,17 @@ def generate_image_ai(request):
         import base64
         import os
         from django.core.files.base import ContentFile
+        from django.conf import settings
         
         # Generate image using Imagen
         image_gen_service = ImageGenerationService()
         result = image_gen_service.generate_image_from_text(rewritten_text)
         
         if result and result.get('image_data'):
+            # Ensure uploads directory exists
+            uploads_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
+            os.makedirs(uploads_dir, exist_ok=True)
+            
             # Save the generated image to media folder
             filename = f"generated_{os.urandom(8).hex()}.png"
             filepath = f"uploads/{filename}"
@@ -247,6 +252,13 @@ def generate_image_ai(request):
             # Save to Django storage
             saved_path = default_storage.save(filepath, ContentFile(result['image_data']))
             image_url = default_storage.url(saved_path)
+            
+            # Verify file was saved
+            full_path = os.path.join(settings.MEDIA_ROOT, saved_path)
+            if os.path.exists(full_path):
+                logs.append(f"✅ Image saved successfully: {saved_path} ({os.path.getsize(full_path)} bytes)")
+            else:
+                logs.append(f"⚠️ Warning: Image URL created but file not found at {full_path}")
             
             # Get the source information
             source = result.get('source', 'ai-generated')
@@ -368,7 +380,7 @@ def post_linkedin(request):
     
     # Also create PostHistory record
     post_history = PostHistory.objects.create(
-        original_reddit_content=request.session.get('dashboard_state', {}).get('selected_post', {}).get('content', ''),
+        original_content=request.session.get('dashboard_state', {}).get('selected_post', {}).get('content', ''),
         rewritten_content=rewritten_text,
         image_url=image_url,
         image_source=request.session.get('dashboard_state', {}).get('image_source', 'unknown'),
@@ -379,11 +391,26 @@ def post_linkedin(request):
         linkedin_service = LinkedInService()
         
         if image_url:
-            # Download image
             import requests
-            img_response = requests.get(image_url, timeout=10)
-            img_response.raise_for_status()
-            image_data = img_response.content
+            import os
+            from django.conf import settings
+            
+            # Check if this is a local media file or external URL
+            if '/media/' in image_url:
+                # Local file - read from disk (works in Docker)
+                media_path = image_url.split('/media/')[-1]
+                file_path = os.path.join(settings.MEDIA_ROOT, media_path)
+                
+                if os.path.exists(file_path):
+                    with open(file_path, 'rb') as f:
+                        image_data = f.read()
+                else:
+                    raise FileNotFoundError(f"Local image not found: {file_path}")
+            else:
+                # External URL - download via HTTP
+                img_response = requests.get(image_url, timeout=10)
+                img_response.raise_for_status()
+                image_data = img_response.content
             
             # Post with image
             result = linkedin_service.post_with_image(rewritten_text, image_data)

@@ -40,3 +40,7 @@ gunicorn
 whitenoise
 tqdm
 httpx
+
+# Cloud Storage for production media files
+django-storages[google]
+google-cloud-storage

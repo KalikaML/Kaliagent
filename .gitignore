@@ -28,10 +28,11 @@ media/
 # System files
 .DS_Store
 Thumbs.db
-
+staticfiles/
 # Environment variables
 .env
 .env.*
+
 config/
 gsheet_key_suppliers_list.json
 
@@ -44,3 +45,4 @@ DEPLOYMENT_CONFIG_GUIDE.txt
 DEPLOYMENT_QUICK_REFERENCE.txt
 GITHUB_DEPLOYMENT_GUIDE.txt
 verify_deployment_ready.py
+PRODUCTION_MEDIA_SETUP.md

@@ -157,7 +157,7 @@ LINKEDIN_ACCESS_TOKEN=LINKEDIN_ACCESS_TOKEN:latest,\
 LINKEDIN_PERSON_URN=LINKEDIN_PERSON_URN:latest,\
 GOOGLE_SHEETS_CREDENTIALS_JSON=GOOGLE_SHEETS_CREDENTIALS_JSON:latest,\
 SUPPLIERS_CSV_DATA=SUPPLIERS_CSV_DATA:latest" \
-  --set-env-vars="DJANGO_SETTINGS_MODULE=command_center.settings,DEBUG=False,ALLOWED_HOSTS=command-center-uat-6ys7pejqpq-uc.a.run.app" \
+  --set-env-vars="DJANGO_SETTINGS_MODULE=command_center.settings,DEBUG=False,ALLOWED_HOSTS=command-center-uat-6ys7pejqpq-uc.a.run.app,USE_GCS=True,GCS_BUCKET_NAME=kaliagents-media,GCP_PROJECT_ID=$PROJECT_ID" \
   --min-instances=1 \
   --max-instances=1 \
   --cpu-boost \

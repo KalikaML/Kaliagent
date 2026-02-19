@@ -1,0 +1,28 @@
+# Auto detect text files and normalize line endings to LF in the repo
+* text=auto
+
+# Shell scripts should always use LF (they run in Linux containers)
+*.sh text eol=lf
+entrypoint.sh text eol=lf
+
+# Python files
+*.py text eol=lf
+
+# Web files
+*.html text eol=lf
+*.css text eol=lf
+*.js text eol=lf
+*.json text eol=lf
+
+# Docker and config files
+Dockerfile text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
