@@ -120,10 +120,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 # Django automatically collects from each installed app's static/ folder
-# Only list directories here that are NOT inside installed apps
-STATICFILES_DIRS = [
-    BASE_DIR / 'static',  # For global/shared static files
-]
+# All static files are in app directories, so no STATICFILES_DIRS needed
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'

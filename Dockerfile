@@ -31,8 +31,9 @@ RUN python -m playwright install chromium
 # Copy project
 COPY . /app
 
-# Create media directories for local storage
+# Create media and runtime_logs directories for local storage
 RUN mkdir -p /app/media/uploads && chmod -R 755 /app/media
+RUN mkdir -p /app/runtime_logs/procurement && chmod -R 755 /app/runtime_logs
 
 # Entrypoint
 COPY entrypoint.sh /entrypoint.sh
