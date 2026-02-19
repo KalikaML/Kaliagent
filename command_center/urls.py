@@ -20,13 +20,8 @@ urlpatterns = [
     path('linkedin/', include('linkedin_automation.urls')),
 ]
 
-# Media files serving for development
+# Media files serving for development only
+# In production with GCS, files are served directly from storage.googleapis.com
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-else:
-    # Also serve media in non-DEBUG mode for local testing
-    # Remove this in production and use proper media server (nginx, S3, etc.)
-    urlpatterns += [
-        re_path(r'^media/(?P<path>.*)$', serve, {'document_root': settings.MEDIA_ROOT}),
-    ]
 

@@ -241,24 +241,17 @@ def generate_image_ai(request):
         result = image_gen_service.generate_image_from_text(rewritten_text)
         
         if result and result.get('image_data'):
-            # Ensure uploads directory exists
-            uploads_dir = os.path.join(settings.MEDIA_ROOT, 'uploads')
-            os.makedirs(uploads_dir, exist_ok=True)
-            
-            # Save the generated image to media folder
+            # Save the generated image to storage (works with both local and GCS)
             filename = f"generated_{os.urandom(8).hex()}.png"
             filepath = f"uploads/{filename}"
             
-            # Save to Django storage
+            # Save to Django storage (automatically uses GCS or local based on settings)
             saved_path = default_storage.save(filepath, ContentFile(result['image_data']))
             image_url = default_storage.url(saved_path)
             
-            # Verify file was saved
-            full_path = os.path.join(settings.MEDIA_ROOT, saved_path)
-            if os.path.exists(full_path):
-                logs.append(f"✅ Image saved successfully: {saved_path} ({os.path.getsize(full_path)} bytes)")
-            else:
-                logs.append(f"⚠️ Warning: Image URL created but file not found at {full_path}")
+            # Log successful save
+            storage_type = "GCS" if os.getenv('USE_GCS', 'False') == 'True' else "local"
+            logs.append(f"✅ Image saved to {storage_type} storage: {saved_path}")
             
             # Get the source information
             source = result.get('source', 'ai-generated')
@@ -394,20 +387,28 @@ def post_linkedin(request):
             import requests
             import os
             from django.conf import settings
+            from django.core.files.storage import default_storage
             
-            # Check if this is a local media file or external URL
-            if '/media/' in image_url:
-                # Local file - read from disk (works in Docker)
-                media_path = image_url.split('/media/')[-1]
-                file_path = os.path.join(settings.MEDIA_ROOT, media_path)
+            # Check if this is our stored file (local or GCS) or external URL
+            if '/media/' in image_url or 'storage.googleapis.com' in image_url:
+                # Our storage (local or GCS) - use default_storage
+                # Extract the file path from the URL
+                if '/media/' in image_url:
+                    media_path = image_url.split('/media/')[-1]
+                elif 'storage.googleapis.com' in image_url:
+                    # Extract path after bucket name
+                    media_path = image_url.split(f"{settings.GS_BUCKET_NAME}/")[-1] if hasattr(settings, 'GS_BUCKET_NAME') else image_url.split('/')[-1]
+                else:
+                    media_path = image_url.split('/')[-1]
                 
-                if os.path.exists(file_path):
-                    with open(file_path, 'rb') as f:
+                # Read from storage backend (works with both local and GCS)
+                if default_storage.exists(media_path):
+                    with default_storage.open(media_path, 'rb') as f:
                         image_data = f.read()
                 else:
-                    raise FileNotFoundError(f"Local image not found: {file_path}")
+                    raise FileNotFoundError(f"Image not found in storage: {media_path}")
             else:
-                # External URL - download via HTTP
+                # External URL (Pexels, Giphy, etc) - download via HTTP
                 img_response = requests.get(image_url, timeout=10)
                 img_response.raise_for_status()
                 image_data = img_response.content

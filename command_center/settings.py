@@ -132,11 +132,21 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 # Use Google Cloud Storage in production, local filesystem in development
 if os.getenv('USE_GCS', 'False') == 'True':
     # Production: Google Cloud Storage
-    DEFAULT_FILE_STORAGE = 'storages.backends.gcloud.GoogleCloudStorage'
     GS_BUCKET_NAME = os.getenv('GCS_BUCKET_NAME', 'kaliagents-media')
     GS_PROJECT_ID = os.getenv('GCP_PROJECT_ID')
     GS_CREDENTIALS = None  # Uses default credentials in Cloud Run
     MEDIA_URL = f'https://storage.googleapis.com/{GS_BUCKET_NAME}/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')  # Define for compatibility
+    
+    # Configure Django STORAGES (new format for Django 4.2+)
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.gcloud.GoogleCloudStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+        },
+    }
     print(f"📦 Using Google Cloud Storage: {GS_BUCKET_NAME}")
 else:
     # Development: Local filesystem
